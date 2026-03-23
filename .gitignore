@@ -1,0 +1,6 @@
+*.txt
+__pycache__
+.venv
+.vscode
+*.xlsx
+DONCOMMIT.*
