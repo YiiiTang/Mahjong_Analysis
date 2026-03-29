@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 df = pd.read_excel("analyze_winner_snapshots.xlsx")
 df = df.fillna(0)
@@ -9,11 +9,11 @@ df = df.fillna(0)
 df['花色分散度 (d項)'] = 1 - df['最多單一花色丟棄比例']
 
 feature_cols = [
-    '當下巡數',
-    '當下副露數',
-    '當下3至7比例', 
+    '當下巡數',      
+    '當下副露數',    
+    '當下3至7比例',   
     '花色分散度 (d項)',
-    '當下丟字比例'  
+    '當下丟字比例'   
 ]
 
 X = df[feature_cols]
@@ -22,13 +22,15 @@ Y = df['是否已聽牌 (Y)']
 model = LinearRegression()
 model.fit(X, Y)
 
-Y_pred_raw = model.predict(X)
-Y_pred_prob = np.clip(Y_pred_raw, 0, 1) 
-Y_pred_class = (Y_pred_prob >= 0.5).astype(int)
+Y_pred = model.predict(X)
 
-print(f"Accuracy: {accuracy_score(Y, Y_pred_class):.4f}\n")
+mae = mean_absolute_error(Y, Y_pred)
+mse = mean_squared_error(Y, Y_pred)
+r2 = r2_score(Y, Y_pred)
 
-print(classification_report(Y, Y_pred_class))
+print(f"MAE (平均絕對誤差): {mae:.4f}") # 數值越小代表預測的機率越貼近真實的 0 或 1
+print(f"MSE (均方誤差): {mse:.4f}")
+print(f"R-squared (決定係數): {r2:.4f}\n")
 
 print(f"截距 (w0): {model.intercept_:.4f}")
 
