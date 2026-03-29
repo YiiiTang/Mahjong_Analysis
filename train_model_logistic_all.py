@@ -30,8 +30,8 @@ print(classification_report(Y_test, Y_pred))
 
 print(f"截距 (w0): {model.intercept_[0]:.4f}")
 
-print(f"當下巡數(a) 的權重: {model.coef_[0]:.4f}")
-print(f"當下副露數(b) 的權重: {model.coef_[1]:.4f}")
-print(f"當下3至7比例(c) 的權重: {model.coef_[2]:.4f}")
-print(f"花色分散度(d) 的權重: {model.coef_[3]:.4f}")
-print(f"當下丟字比例(e) 的權重: {model.coef_[4]:.4f}")
+print(f"當下巡數(a) 的權重: {model.coef_[0][0]:.4f}")
+print(f"當下副露數(b) 的權重: {model.coef_[0][1]:.4f}")
+print(f"當下3至7比例(c) 的權重: {model.coef_[0][2]:.4f}")
+print(f"花色分散度(d) 的權重: {model.coef_[0][3]:.4f}")
+print(f"當下丟字比例(e) 的權重: {model.coef_[0][4]:.4f}")

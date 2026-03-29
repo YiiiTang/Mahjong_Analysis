@@ -49,6 +49,7 @@ if __name__ == "__main__":
         turn_count = 0
         meld_count = 0
         total_discard = 0
+        total_exposed = 0
         
         discard_3_to_7 = 0
         discard_wan = 0
@@ -72,58 +73,66 @@ if __name__ == "__main__":
             if action == 'M':
                 turn_count += 1
                 
-            elif action in ('P', 'E', 'EM', 'EL', 'ER', 'UG', 'HG', 'G'):
-                meld_count += 1
-                
-            elif action in ('HD', 'MD'):
-                total_discard += 1
-                tile_str = step_data[3] if len(step_data) > 3 else ""
+            elif action in ('P', 'E', 'EM', 'EL', 'ER', 'UG', 'HG', 'G', 'HD', 'MD'):
+                is_discard = action in ('HD', 'MD')
 
-                if tile_str.isdigit():
-                    card_num = int(tile_str)
-                    suit = card_num // 100
-                    face_value = (card_num // 10) % 10
-                    
-                    if suit in (1, 2, 3) and 3 <= face_value <= 7:
-                        discard_3_to_7 += 1
+                if not is_discard:
+                    meld_count += 1
+                    tiles_to_process = step_data[3:]
+                else:
+                    total_discard += 1
+                    tiles_to_process = [step_data[3]] if len(step_data) > 3 else []
+                
+                for tile_str in tiles_to_process:
+                    if tile_str.isdigit():
+                        total_exposed += 1
+                        card_num = int(tile_str)
+                        suit = card_num // 100
+                        face_value = (card_num // 10) % 10
                         
-                    if suit == 1:
-                        discard_wan += 1
-                    elif suit == 2:
-                        discard_tong += 1
-                    elif suit == 3:
-                        discard_tiao += 1
-                    elif suit == 4:
-                        discard_zi += 1
+                        if suit in (1, 2, 3) and 3 <= face_value <= 7:
+                            discard_3_to_7 += 1
+                            
+                        if suit == 1:
+                            discard_wan += 1
+                        elif suit == 2:
+                            discard_tong += 1
+                        elif suit == 3:
+                            discard_tiao += 1
+                        elif suit == 4:
+                            discard_zi += 1
                 
-                player_state = states.get_player(states.state[j], winner_loc)
-                is_tenpai = 1 if player_state.shantenCount <= 0 else 0
+                if is_discard:
+                    tile_str = step_data[3] if len(step_data) > 3 else ""
+                    player_state = states.get_player(states.state[j], winner_loc)
+                    is_tenpai = 1 if player_state.shantenCount <= 0 else 0
                 
-                mid_tile_ratio = discard_3_to_7 / total_discard if total_discard > 0 else 0.0
-                wan_ratio = discard_wan / total_discard if total_discard > 0 else 0.0
-                tong_ratio = discard_tong / total_discard if total_discard > 0 else 0.0
-                tiao_ratio = discard_tiao / total_discard if total_discard > 0 else 0.0
-                zi_ratio = discard_zi / total_discard if total_discard > 0 else 0.0
-                
-                max_suit_count = max(discard_wan, discard_tong, discard_tiao)
-                total_suit_discard = discard_wan + discard_tong + discard_tiao
-                max_suit_ratio = max_suit_count / total_suit_discard if total_suit_discard > 0 else 0.0
-                
-                snapshot = {
-                    '檔案名稱': file.name,
-                    '贏家位置': winner_loc,
-                    'Step_ID': j,
-                    '動作類型': action,
-                    '丟棄的牌': tile_str,
-                    '當下巡數': turn_count,
-                    '當下副露數': meld_count,
-                    '累積丟牌數': total_discard,
-                    '當下3至7比例': round(mid_tile_ratio, 4),
-                    '當下丟字比例': round(zi_ratio, 4),
-                    '最多單一花色丟棄比例': round(max_suit_ratio, 4),
-                    '是否已聽牌 (Y)': is_tenpai
-                }
-                game_snapshots.append(snapshot)
+                    mid_tile_ratio = discard_3_to_7 / total_exposed if total_exposed > 0 else 0.0
+                    wan_ratio = discard_wan / total_exposed if total_exposed > 0 else 0.0
+                    tong_ratio = discard_tong / total_exposed if total_exposed > 0 else 0.0
+                    tiao_ratio = discard_tiao / total_exposed if total_exposed > 0 else 0.0
+                    zi_ratio = discard_zi / total_exposed if total_exposed > 0 else 0.0
+                    
+                    max_suit_count = max(discard_wan, discard_tong, discard_tiao)
+                    total_suit_discard = discard_wan + discard_tong + discard_tiao
+                    max_suit_ratio = max_suit_count / total_suit_discard if total_suit_discard > 0 else 0.0
+                    
+                    snapshot = {
+                        '檔案名稱': file.name,
+                        '贏家位置': winner_loc,
+                        'Step_ID': j,
+                        '動作類型': action,
+                        '丟棄的牌': tile_str,
+                        '當下巡數': turn_count,
+                        '當下副露數': meld_count,
+                        '累積丟牌數': total_discard,
+                        '累積曝光牌數': total_exposed,
+                        '當下3至7比例': round(mid_tile_ratio, 4),
+                        '當下丟字比例': round(zi_ratio, 4),
+                        '最多單一花色丟棄比例': round(max_suit_ratio, 4),
+                        '是否已聽牌 (Y)': is_tenpai
+                    }
+                    game_snapshots.append(snapshot)
                 
         if game_snapshots:
             results.append(pd.DataFrame(game_snapshots))

@@ -29,5 +29,9 @@ print(f"Accuracy: {accuracy_score(Y_test, Y_pred):.4f}")
 print(classification_report(Y_test, Y_pred))
 
 print(f"截距 (w0): {model.intercept_[0]:.4f}")
-for feature, coef in zip(feature_cols, model.coef_[0]):
-    print(f"{feature} 的權重: {coef:.4f}")
+
+print(f"當下巡數(a) 的權重: {model.coef_[0][0]:.4f}")
+print(f"當下副露數(b) 的權重: {model.coef_[0][1]:.4f}")
+print(f"當下3至7比例(c) 的權重: {model.coef_[0][2]:.4f}")
+print(f"花色分散度(d) 的權重: {model.coef_[0][3]:.4f}")
+print(f"當下丟字比例(e) 的權重: {model.coef_[0][4]:.4f}")
