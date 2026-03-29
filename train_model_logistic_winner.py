@@ -26,7 +26,7 @@ Y_pred = model.predict(X_test)
 
 print(f"Accuracy: {accuracy_score(Y_test, Y_pred):.4f}")
 
-print(classification_report(Y_test, Y_pred))
+# print(classification_report(Y_test, Y_pred))
 
 print(f"截距 (w0): {model.intercept_[0]:.4f}")
 
