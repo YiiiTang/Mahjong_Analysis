@@ -11,7 +11,10 @@ def list_files(directory_path):
     return files
 
 def save_file(results):
-    output_path = Path("analyze_all_players_snapshots.xlsx")
+    target_dir = Path("Training_Model")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / "analyze_all_players_snapshots.xlsx"
+    
     if not results:
         print("沒有符合條件的資料可供儲存。")
         return
@@ -19,13 +22,11 @@ def save_file(results):
     output_data = pd.concat(results, ignore_index=True)
     try:
         output_data.to_excel(output_path, index=False)
-        print(f"資料已成功匯出至 {output_path.resolve()}")
+        print(f"進攻資料已成功匯出至 {output_path.resolve()}")
     except PermissionError:
-        fallback_path = output_path.with_name(
-            f"{output_path.stem}_{datetime.now():%Y%m%d_%H%M%S}{output_path.suffix}"
-        )
+        fallback_path = target_dir / f"{output_path.stem}_{datetime.now():%Y%m%d_%H%M%S}{output_path.suffix}"
         output_data.to_excel(fallback_path, index=False)
-        print(f"檔案 {output_path} 正在使用中，已改為匯出至 {fallback_path.resolve()}")
+        print(f"檔案正在使用中，已改為匯出至 {fallback_path.resolve()}")
 
 if __name__ == "__main__":
     results = []

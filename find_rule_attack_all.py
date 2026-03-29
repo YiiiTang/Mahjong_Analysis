@@ -12,7 +12,9 @@ def list_files(directory_path):
     return [entry for entry in p.iterdir() if entry.is_file()]
 
 def save_file(results):
-    output_path = Path("analyze_attack_snapshots_all.xlsx")
+    target_dir = Path("Training_Model")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / "analyze_attack_snapshots_all.xlsx"
     if not results:
         print("沒有符合條件的資料可供儲存。")
         return

@@ -26,15 +26,17 @@ def first_tenpai_step(states, loc_char):
     return -2
 
 def not_winner(winner:str) -> List[str]:
-      return [loc for loc in ['W', 'S', 'N', 'E'] if loc != winner]
+    return [loc for loc in ['W', 'S', 'N', 'E'] if loc != winner]
 
 def save_file(results):
-      output_path = Path("analyze_mid_3_to_7.xlsx")
-      output_data = pd.concat(results, ignore_index=True)
-      try:
+    target_dir = Path("Training_Model")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / ("analyze_mid_3_to_7.xlsx")
+    output_data = pd.concat(results, ignore_index=True)
+    try:
             output_data.to_excel(output_path, index=False)
             print(f"Exported to {output_path.resolve()}")
-      except PermissionError:
+    except PermissionError:
             fallback_path = output_path.with_name(
                   f"{output_path.stem}_{datetime.now():%Y%m%d_%H%M%S}{output_path.suffix}"
             )

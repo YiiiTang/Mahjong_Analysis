@@ -11,7 +11,9 @@ def list_files(directory_path):
     return files
 
 def save_file(results):
-    output_path = Path("analyze_winner_snapshots.xlsx")
+    target_dir = Path("Training_Model")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / ("analyze_winner_snapshots.xlsx")
     if not results:
         print("沒有符合條件的資料可供儲存。")
         return
