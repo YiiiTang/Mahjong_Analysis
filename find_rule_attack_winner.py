@@ -97,6 +97,7 @@ if __name__ == "__main__":
                     '向聽數 (Shanten)': shanten,
                     '進張數 (Ukeire)': ukeire,
                     '剩餘牌山': states.state[j].mountainCount,
+                    'Target_是否胡牌(Win)': 1 if remaining_turns == 0 else 0,
                     'Target_剩餘巡數': remaining_turns
                 }
                 game_snapshots.append(snapshot)

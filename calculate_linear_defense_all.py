@@ -32,14 +32,14 @@ params = {
     "d": 0.2290,         # 花色分布權重
     "e": -0.1635,          # 字牌比例權重
     
-    "turn_count": 6,              # 巡數
-    "meld_count": 1,               # 副露數 (碰、吃、明槓)
-    "middle_cards_discarded": 1,   # 中張數 (3~7)
-    "total_discarded": 6,         # 總丟牌數
-    "max_suit_discarded": 3,       # 最多被丟的花色數量
-    "total_suit_discarded": 3,     # 總丟花色牌數 (該家)
-    "honor_cards_discarded": 3,    # 丟字牌數
-    "player_total_discarded": 6   # 總丟牌數 (該家)
+    "turn_count": 12,              # 巡數
+    "meld_count": 2,               # 副露數 (碰、吃、明槓)
+    "middle_cards_discarded": 4,   # 中張數 (3~7)
+    "total_discarded": 12,         # 總丟牌數
+    "max_suit_discarded": 4,       # 最多被丟的花色數量
+    "total_suit_discarded": 8,     # 總丟花色牌數 (該家)
+    "honor_cards_discarded": 4,    # 丟字牌數
+    "player_total_discarded": 12   # 總丟牌數 (該家)
 }
 
 result = calculate_ting_probability(**params)

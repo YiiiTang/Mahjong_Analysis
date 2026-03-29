@@ -5,13 +5,13 @@ def sigmoid(z):
     return 1 / (1 + math.exp(-z))
 
 def tenpai_probability(
-    jun = 6,                 # 巡數
-    furo = 1,              # 副露數
-    mid_tiles = 1,         # 中張數(3~7)
-    total_discards = 6,    # 總丟牌數
-    max_suit_discards = 3, # 最多被丟的花色數量
-    total_suit_discards = 3, # 總丟花色牌數
-    honor_discards = 3,      # 丟字牌數
+    jun = 12,                 # 巡數
+    furo = 2,              # 副露數
+    mid_tiles = 4,         # 中張數(3~7)
+    total_discards = 12,    # 總丟牌數
+    max_suit_discards = 4, # 最多被丟的花色數量
+    total_suit_discards = 8, # 總丟花色牌數
+    honor_discards = 4,      # 丟字牌數
 
     # 權重
     w0 = -2.6117,  
