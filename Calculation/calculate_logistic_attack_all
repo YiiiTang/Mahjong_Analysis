@@ -1,0 +1,47 @@
+import math
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+def win_probability(
+    jun=12,              # Current turn (巡數)
+    furo=2,              # Melds/Calls (副露數)
+    shanten=1,           # Steps to Riichi/Tenpai (向聽數)
+    effective_tiles=4,   # Winning tiles/outs (進張/聽牌張數)
+    max_jun=18,          # Normalization constant for turns
+    max_tiles=12,        # Normalization constant for tiles
+    
+    # Weights
+    w0=1.4787,
+    w1=-2.5757,         
+    w2=-0.0496,         
+    w3=-0.6184,          
+    w4=0.6215,        
+    w5=-0.1439           
+):
+    # Feature Normalization
+    jun_norm = jun / max_jun
+    tile_norm = effective_tiles / max_tiles
+
+    # Linear combination (z)
+    # Note: Shanten is often used directly or as (1 - shanten_norm)
+    z = (
+        w0
+        + w1 * jun_norm
+        + w2 * furo
+        + w3 * shanten
+        + w4 * tile_norm
+        + w5 * (furo * shanten)
+    )
+
+    # Logistic (sigmoid)
+    prob = sigmoid(z)
+    
+    print(f"--- Mahjong Hand Analysis ---")
+    print(f"Turn: {jun} | Shanten: {shanten} | Effective Tiles: {effective_tiles}")
+    print(f"Calculated Win Probability: {prob:.2%}")
+
+    return prob
+
+# --- Run Test ---
+win_probability()
