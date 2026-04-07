@@ -7,8 +7,7 @@ from pathlib import Path
 
 def list_files(directory_path):
     p = Path(directory_path)
-    files = [entry for entry in p.iterdir() if entry.is_file()]
-    return files
+    return [entry for entry in p.iterdir() if entry.is_file()]
 
 def save_file(results):
     target_dir = Path("Training_Model")
@@ -30,73 +29,90 @@ def save_file(results):
 
 if __name__ == "__main__":
     results = []
-
     folder_path = "D:\\Project\\Mahjong\\Board\\TAAI_MJ_2025\\3"
 
     for file in list_files(folder_path):
-        file_path_str = str(file) 
         print(f"Processing: {file.name}")
         try:
-            states = getRound(file_path_str)
+            states = getRound(str(file))
         except Exception as e:
             print(f"讀取 {file.name} 時發生錯誤: {e}")
             continue
         
         winner_loc = states.winnerLoc
-        
         players = ['E', 'S', 'W', 'N']
+
         player_stats = {
             loc: {
                 'turn_count': 0,
                 'meld_count': 0,
                 'total_discard': 0,
-                'total_exposed': 0,
+
                 'discard_3_to_7': 0,
                 'discard_wan': 0,
                 'discard_tong': 0,
                 'discard_tiao': 0,
-                'discard_zi': 0
+                'discard_zi': 0,
+
+                'moqie_count': 0,
+                'current_continuous_moqie': 0,
+                'max_continuous_moqie': 0,
+                'moqie_to_shouqie_count': 0,
+
+                'last_discard_type': None
             } for loc in players
         }
-        
+
         game_snapshots = []
-        
+
         for j in range(1, len(states.state)):
             step_data = states.state[j].stepData
             if len(step_data) < 3:
                 continue
-                
+
             actor_loc = step_data[1]
             action = step_data[2]
-            
+
             if actor_loc not in players:
                 continue
-            
+
             stats = player_stats[actor_loc]
-                
-            if action == 'M':
-                stats['turn_count'] += 1
-                
-            elif action in ('P', 'E', 'EM', 'EL', 'ER', 'UG', 'HG', 'G', 'HD', 'MD'):
+
+            if action in ('P', 'E', 'EM', 'EL', 'ER', 'UG', 'HG', 'G', 'HD', 'MD'):
                 is_discard = action in ('HD', 'MD')
-                
+
                 if not is_discard:
                     stats['meld_count'] += 1
-                    tiles_to_process = step_data[3:]
+
                 else:
+                    stats['turn_count'] += 1
                     stats['total_discard'] += 1
-                    tiles_to_process = [step_data[3]] if len(step_data) > 3 else []
-                    
-                for tile_str in tiles_to_process:
+
+                    tile_str = step_data[3] if len(step_data) > 3 else ""
+
+                    if action == 'MD':
+                        stats['moqie_count'] += 1
+                        stats['current_continuous_moqie'] += 1
+
+                        if stats['current_continuous_moqie'] > stats['max_continuous_moqie']:
+                            stats['max_continuous_moqie'] = stats['current_continuous_moqie']
+
+                    elif action == 'HD':
+                        if stats['current_continuous_moqie'] >= 2:
+                            stats['moqie_to_shouqie_count'] += 1
+
+                        stats['current_continuous_moqie'] = 0
+
+                    stats['last_discard_type'] = action
+
                     if tile_str.isdigit():
-                        stats['total_exposed'] += 1
                         card_num = int(tile_str)
                         suit = card_num // 100
                         face_value = (card_num // 10) % 10
-                        
+
                         if suit in (1, 2, 3) and 3 <= face_value <= 7:
                             stats['discard_3_to_7'] += 1
-                            
+
                         if suit == 1:
                             stats['discard_wan'] += 1
                         elif suit == 2:
@@ -106,43 +122,54 @@ if __name__ == "__main__":
                         elif suit == 4:
                             stats['discard_zi'] += 1
 
-                if is_discard:
-                    tile_str = step_data[3] if len(step_data) > 3 else ""
-                    
+                    td = stats['total_discard']
+                    turn = stats['turn_count']
+
+                    def safe_div(a, b):
+                        return a / b if b > 0 else 0.0
+
+                    feat_c = safe_div(stats['discard_3_to_7'], td)
+
+                    number_tiles = stats['discard_wan'] + stats['discard_tong'] + stats['discard_tiao']
+                    max_suit = max(stats['discard_wan'], stats['discard_tong'], stats['discard_tiao'])
+                    feat_d = 1.0 - safe_div(max_suit, number_tiles)
+
+                    feat_e = safe_div(stats['discard_zi'], td)
+
+                    feat_f = safe_div(stats['moqie_count'], td)
+
+                    feat_g = safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn)
+
+                    feat_h = safe_div(stats['moqie_to_shouqie_count'], turn)
+
                     player_state = states.get_player(states.state[j], actor_loc)
                     is_tenpai = 1 if player_state.shantenCount <= 0 else 0
-                    
-                    te = stats['total_exposed']
-                    td = stats['total_discard']
-                    mid_tile_ratio = stats['discard_3_to_7'] / te if te > 0 else 0.0
-                    zi_ratio = stats['discard_zi'] / te if te > 0 else 0.0
-                    
-                    max_suit_count = max(stats['discard_wan'], stats['discard_tong'], stats['discard_tiao'])
-                    total_suit_discard = stats['discard_wan'] + stats['discard_tong'] + stats['discard_tiao']
-                    max_suit_ratio = max_suit_count / total_suit_discard if total_suit_discard > 0 else 0.0
-                    
-                    is_winner_eventually = 1 if actor_loc == winner_loc else 0
-                    
+
                     snapshot = {
                         '檔案名稱': file.name,
                         '玩家位置': actor_loc,
-                        '最終是否獲勝': is_winner_eventually,
                         'Step_ID': j,
                         '動作類型': action,
                         '丟棄的牌': tile_str,
-                        '當下巡數': stats['turn_count'],
-                        '當下副露數': stats['meld_count'],
+
                         '累積丟牌數': td,
-                        '累積曝光牌數': te,
-                        '當下3至7比例': round(mid_tile_ratio, 4),
-                        '當下丟字比例': round(zi_ratio, 4),
-                        '最多單一花色丟棄比例': round(max_suit_ratio, 4),
-                        '是否已聽牌 (Y)': is_tenpai
+                        'feat_a_巡數': turn,
+                        'feat_b_吃碰數': stats['meld_count'],
+
+                        'feat_c_中張比例': round(feat_c, 4),
+                        'feat_d_花色集中度': round(feat_d, 4),
+                        'feat_e_字牌比例': round(feat_e, 4),
+                        'feat_f_摸切比例': round(feat_f, 4),
+                        'feat_g_連續摸切強度': round(feat_g, 4),
+                        'feat_h_摸切轉手切': round(feat_h, 4),
+
+                        'Target_是否已聽牌': is_tenpai
                     }
+
                     game_snapshots.append(snapshot)
-                
+
         if game_snapshots:
             results.append(pd.DataFrame(game_snapshots))
-            
+
     if results:
         save_file(results)
