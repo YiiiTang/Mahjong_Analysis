@@ -5,28 +5,35 @@ from pathlib import Path
 from analyze import getRound
 from fileProcess import RoundState, States, playerState
 
-INTERCEPT = -4.5816  
+# --- 模型參數 (請依訓練結果填入) ---
+INTERCEPT = -2.7291  
 WEIGHTS = {
-    'a_巡數': 0.3845,         
-    'b_吃碰數': 0.5576,       
-    'c_中張比例': 2.4114,    
-    'd_花色集中度': 1.0425,   
-    'e_字牌比例': -2.6378,    
-    'f_摸切比例': -0.4417,     
-    'g_連續摸切強度': -1.3701, 
-    'h_摸切轉手切': 0.5641    
+    'a': 1.2849, 'b': 0.5394, 'c': 0.4233, 'd': 0.3736,
+    'e': -0.8156, 'f': -0.0841, 'g': -0.0894, 'h': 0.0351    
+}
+
+MEANS = {
+    'a': 5.5966, 'b': 0.8766, 'c': 0.1406, 'd': 0.5281,
+    'e': 0.5972, 'f': 0.1803, 'g': 0.0127, 'h': 0.0165
+}
+SCALES = {
+    'a': 3.3296, 'b': 0.9683, 'c': 0.1708, 'd': 0.3470,
+    'e': 0.3043, 'f': 0.1870, 'g': 0.0484, 'h': 0.0436
 }
 
 def calculate_probability(features):
+    # 執行標準化轉換
+    scaled = {k: (features[k] - MEANS[k]) / SCALES[k] if SCALES[k] != 0 else 0 for k in features}
+
     z = INTERCEPT \
-        + WEIGHTS['a_巡數'] * features['a'] \
-        + WEIGHTS['b_吃碰數'] * features['b'] \
-        + WEIGHTS['c_中張比例'] * features['c'] \
-        + WEIGHTS['d_花色集中度'] * features['d'] \
-        + WEIGHTS['e_字牌比例'] * features['e'] \
-        + WEIGHTS['f_摸切比例'] * features['f'] \
-        + WEIGHTS['g_連續摸切強度'] * features['g'] \
-        + WEIGHTS['h_摸切轉手切'] * features['h']
+        + WEIGHTS['a'] * scaled['a'] \
+        + WEIGHTS['b'] * scaled['b'] \
+        + WEIGHTS['c'] * scaled['c'] \
+        + WEIGHTS['d'] * scaled['d'] \
+        + WEIGHTS['e'] * scaled['e'] \
+        + WEIGHTS['f'] * scaled['f'] \
+        + WEIGHTS['g'] * scaled['g'] \
+        + WEIGHTS['h'] * scaled['h']
 
     z = max(min(z, 500), -500) 
     return 1 / (1 + math.exp(-z))

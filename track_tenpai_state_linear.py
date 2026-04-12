@@ -4,34 +4,39 @@ from pathlib import Path
 from analyze import getRound
 from fileProcess import RoundState, States, playerState
 
-INTERCEPT = 0.1234  
+# --- 模型參數 (請依訓練結果填入) ---
+INTERCEPT = 0.1865  
 WEIGHTS = {
-    'a_巡數': -0.1566,        
-    'b_吃碰數': 0.0412,       
-    'c_中張比例': 0.0695,    
-    'd_花色集中度': 0.2094,   
-    'e_字牌比例': -0.1682,    
-    'f_摸切比例': -0.0447,     
-    'g_連續摸切強度': -0.0549, 
-    'h_摸切轉手切': 0.1830    
+    'a': 0.1370, 'b': 0.0673, 'c': 0.0571, 'd': 0.0726,
+    'e': -0.0510, 'f': -0.0084, 'g': -0.0026, 'h': 0.0079    
 }
 
-# 線性迴歸的計算函數 (直接相加，不使用 exp/sigmoid)
+MEANS = {
+    'a': 5.6080, 'b': 0.8770, 'c': 0.1402, 'd': 0.5261,
+    'e': 0.5964, 'f': 0.1816, 'g': 0.0128, 'h': 0.0165
+}
+SCALES = {
+    'a': 3.3261, 'b': 0.9675, 'c': 0.1704, 'd': 0.3467,
+    'e': 0.3033, 'f': 0.1883, 'g': 0.0480, 'h': 0.0433
+}
+
 def calculate_linear_score(features):
+    # 執行標準化轉換： (原始值 - 平均值) / 標準差
+    scaled = {k: (features[k] - MEANS[k]) / SCALES[k] if SCALES[k] != 0 else 0 for k in features}
+    
     score = INTERCEPT \
-        + WEIGHTS['a_巡數'] * features['a'] \
-        + WEIGHTS['b_吃碰數'] * features['b'] \
-        + WEIGHTS['c_中張比例'] * features['c'] \
-        + WEIGHTS['d_花色集中度'] * features['d'] \
-        + WEIGHTS['e_字牌比例'] * features['e'] \
-        + WEIGHTS['f_摸切比例'] * features['f'] \
-        + WEIGHTS['g_連續摸切強度'] * features['g'] \
-        + WEIGHTS['h_摸切轉手切'] * features['h']
+        + WEIGHTS['a'] * scaled['a'] \
+        + WEIGHTS['b'] * scaled['b'] \
+        + WEIGHTS['c'] * scaled['c'] \
+        + WEIGHTS['d'] * scaled['d'] \
+        + WEIGHTS['e'] * scaled['e'] \
+        + WEIGHTS['f'] * scaled['f'] \
+        + WEIGHTS['g'] * scaled['g'] \
+        + WEIGHTS['h'] * scaled['h']
     
     return score
 
 def track_game_state_linear(file_path):
-    """分析單一盤面，回傳該盤面的所有追蹤紀錄"""
     states = getRound(file_path)
     players = ['E', 'S', 'W', 'N']
     file_name = Path(file_path).name
@@ -50,20 +55,16 @@ def track_game_state_linear(file_path):
 
     for j in range(1, len(states.state)):
         step_data = states.state[j].stepData
-        if len(step_data) < 3:
-            continue
+        if len(step_data) < 3: continue
 
         actor_loc = step_data[1]
         action = step_data[2]
 
-        if actor_loc not in players:
-            continue
-
+        if actor_loc not in players: continue
         stats = player_stats[actor_loc]
 
         if action in ('P', 'E', 'EM', 'EL', 'ER', 'UG', 'HG', 'G', 'HD', 'MD'):
             is_discard = action in ('HD', 'MD')
-
             if not is_discard:
                 stats['meld_count'] += 1
             else:
@@ -81,72 +82,40 @@ def track_game_state_linear(file_path):
                         stats['moqie_to_shouqie_count'] += 1
                     stats['current_continuous_moqie'] = 0
 
-                stats['last_discard_type'] = action
-
                 if tile_str.isdigit():
                     card_num = int(tile_str)
-                    suit = card_num // 100
-                    face_value = (card_num // 10) % 10
+                    suit, val = card_num // 100, (card_num // 10) % 10
+                    if suit in (1, 2, 3) and 3 <= val <= 7: stats['discard_3_to_7'] += 1
+                    if suit == 1: stats['discard_wan'] += 1
+                    elif suit == 2: stats['discard_tong'] += 1
+                    elif suit == 3: stats['discard_tiao'] += 1
+                    elif suit == 4: stats['discard_zi'] += 1
 
-                    if suit in (1, 2, 3) and 3 <= face_value <= 7:
-                        stats['discard_3_to_7'] += 1
-
-                    if suit == 1:
-                        stats['discard_wan'] += 1
-                    elif suit == 2:
-                        stats['discard_tong'] += 1
-                    elif suit == 3:
-                        stats['discard_tiao'] += 1
-                    elif suit == 4:
-                        stats['discard_zi'] += 1
-
-                td = stats['total_discard']
-                turn = stats['turn_count']
+                td, turn = stats['total_discard'], stats['turn_count']
                 def safe_div(a, b): return a / b if b > 0 else 0.0
 
                 feat_c = safe_div(stats['discard_3_to_7'], td)
-                number_tiles = stats['discard_wan'] + stats['discard_tong'] + stats['discard_tiao']
-                max_suit = max(stats['discard_wan'], stats['discard_tong'], stats['discard_tiao'])
-                feat_d = 1.0 - safe_div(max_suit, number_tiles)
+                num_tiles = stats['discard_wan'] + stats['discard_tong'] + stats['discard_tiao']
+                max_s = max(stats['discard_wan'], stats['discard_tong'], stats['discard_tiao'])
+                feat_d = 1.0 - safe_div(max_s, num_tiles)
                 feat_e = safe_div(stats['discard_zi'], td)
                 feat_f = safe_div(stats['moqie_count'], td)
                 feat_g = safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn)
                 feat_h = safe_div(stats['moqie_to_shouqie_count'], turn)
 
-                features = {
-                    'a': turn, 'b': stats['meld_count'], 'c': feat_c,
-                    'd': feat_d, 'e': feat_e, 'f': feat_f,
-                    'g': feat_g, 'h': feat_h
-                }
-
+                features = {'a': turn, 'b': stats['meld_count'], 'c': feat_c, 'd': feat_d, 'e': feat_e, 'f': feat_f, 'g': feat_g, 'h': feat_h}
                 pred_score = calculate_linear_score(features)
 
-                player_state_obj = states.get_player(states.state[j], actor_loc)
-                actual_shanten = player_state_obj.shantenCount
-
-                action_name = "手切" if action == "HD" else "摸切"
-
+                actual_shanten = states.get_player(states.state[j], actor_loc).shantenCount
                 tracker_log.append({
-                    '檔案名稱': file_name,
-                    'Step_ID': j,
-                    '玩家': actor_loc,
-                    '動作': action_name,
-                    '丟棄牌': tile_str,
-                    '實際向聽數': actual_shanten,
-                    '預測聽牌分數': round(pred_score, 4),
+                    '檔案名稱': file_name, 'Step_ID': j, '玩家': actor_loc, '動作': "手切" if action == "HD" else "摸切",
+                    '實際向聽數': actual_shanten, '預測聽牌分數': round(pred_score, 4),
                     '特徵值': {
-                        '當下巡數': turn,
-                        '當下副露': stats['meld_count'],
-                        '當下連續摸切': stats['current_continuous_moqie'],
-                        '中張比例': round(feat_c, 4),
-                        '花色集中度': round(feat_d, 4),
-                        '字牌比例': round(feat_e, 4),
-                        '摸切比例': round(feat_f, 4),
-                        '連續摸切強度': round(feat_g, 4),
-                        '摸切轉手切': round(feat_h, 4)
+                        '當下巡數': turn, '當下副露': stats['meld_count'], '中張比例': round(feat_c, 4),
+                        '花色集中度': round(feat_d, 4), '字牌比例': round(feat_e, 4), '摸切比例': round(feat_f, 4),
+                        '連續摸切強度': round(feat_g, 4), '摸切轉手切': round(feat_h, 4)
                     }
                 })
-                
     return tracker_log
 
 if __name__ == "__main__":

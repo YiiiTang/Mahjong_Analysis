@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 df = pd.read_excel("analyze_all_players_snapshots.xlsx")
@@ -20,10 +21,22 @@ feature_cols = [
 X = df[feature_cols]
 Y = df['Target_是否已聽牌']
 
-model = LinearRegression()
-model.fit(X, Y)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-Y_pred = model.predict(X)
+"""
+print("\n" + "="*45)
+print("請將以下參數複製到 track_tenpai_state_linear.py 中")
+print("="*45)
+print(f"MEANS = {{\n    'a': {scaler.mean_[0]:.4f}, 'b': {scaler.mean_[1]:.4f}, 'c': {scaler.mean_[2]:.4f}, 'd': {scaler.mean_[3]:.4f},\n    'e': {scaler.mean_[4]:.4f}, 'f': {scaler.mean_[5]:.4f}, 'g': {scaler.mean_[6]:.4f}, 'h': {scaler.mean_[7]:.4f}\n}}")
+print(f"SCALES = {{\n    'a': {scaler.scale_[0]:.4f}, 'b': {scaler.scale_[1]:.4f}, 'c': {scaler.scale_[2]:.4f}, 'd': {scaler.scale_[3]:.4f},\n    'e': {scaler.scale_[4]:.4f}, 'f': {scaler.scale_[5]:.4f}, 'g': {scaler.scale_[6]:.4f}, 'h': {scaler.scale_[7]:.4f}\n}}")
+print("="*45 + "\n")
+"""
+
+model = LinearRegression()
+model.fit(X_scaled, Y)
+
+Y_pred = model.predict(X_scaled)
 
 mae = mean_absolute_error(Y, Y_pred)
 mse = mean_squared_error(Y, Y_pred)
