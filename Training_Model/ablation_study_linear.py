@@ -51,7 +51,7 @@ for feature in feature_cols:
     print(f"   -> 新準確率: {ablated_acc:.4%} (變化: {change_str})")
 
 print("\n" + "="*50)
-print("🏆 特徵重要性排名")
+print("特徵重要性排名")
 print("="*50)
 
 sorted_importance = sorted(importance_results.items(), key=lambda x: x[1], reverse=True)
@@ -72,7 +72,7 @@ colors = ['#4C72B0' if val > 0 else '#C44E52' for val in drops_percent]
 bars = plt.barh(features[::-1], drops_percent[::-1], color=colors[::-1])
 
 plt.xlabel('準確率下降幅度 (%)', fontsize=12)
-plt.title('消融實驗：移除單一特徵對預測聽牌準確率的影響', fontsize=14, fontweight='bold')
+plt.title('移除單一特徵對預測聽牌準確率的影響', fontsize=14, fontweight='bold')
 plt.axvline(0, color='black', linewidth=1.2, linestyle='--') 
 
 max_positive = max([val for val in drops_percent if val > 0] + [0.1]) 
