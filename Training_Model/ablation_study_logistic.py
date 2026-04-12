@@ -71,7 +71,7 @@ colors = ['#4C72B0' if val > 0 else '#C44E52' for val in drops_percent]
 bars = plt.barh(features[::-1], drops_percent[::-1], color=colors[::-1])
 
 plt.xlabel('準確率下降幅度 (%)', fontsize=12)
-plt.title('移除單一特徵對預測聽牌準確率的影響 (Logistic Regression)', fontsize=14, fontweight='bold')
+plt.title('移除單一特徵對預測聽牌準確率的影響', fontsize=14, fontweight='bold')
 plt.axvline(0, color='black', linewidth=1.2, linestyle='--')
 
 
