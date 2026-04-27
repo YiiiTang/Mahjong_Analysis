@@ -5,26 +5,29 @@ from pathlib import Path
 from analyze import getRound
 from fileProcess import RoundState, States, playerState
 
-# --- 模型參數 (請依訓練結果填入) ---
+# --- 模型參數 (請依訓練結果填入最新的數值) ---
 INTERCEPT = -2.7291  
 WEIGHTS = {
     'a': 1.2849, 'b': 0.5394, 'c': 0.4233, 'd': 0.3736,
-    'e': -0.8156, 'f': -0.0841, 'g': -0.0894, 'h': 0.0351    
+    'e': -0.8156, 'f': -0.0841, 'g': -0.0894, 'h': 0.0351,
+    'i': 0.0, 'j': 0.0, 'k': 0.0, 'l': 0.0  # 請更新為訓練後的數值
 }
 
 MEANS = {
     'a': 5.5966, 'b': 0.8766, 'c': 0.1406, 'd': 0.5281,
-    'e': 0.5972, 'f': 0.1803, 'g': 0.0127, 'h': 0.0165
+    'e': 0.5972, 'f': 0.1803, 'g': 0.0127, 'h': 0.0165,
+    'i': 0.5848, 'j': 0.2761, 'k': 0.1089, 'l': 0.0302
 }
 SCALES = {
     'a': 3.3296, 'b': 0.9683, 'c': 0.1708, 'd': 0.3470,
-    'e': 0.3043, 'f': 0.1870, 'g': 0.0484, 'h': 0.0436
+    'e': 0.3043, 'f': 0.1870, 'g': 0.0484, 'h': 0.0436,
+    'i': 0.4928, 'j': 0.4471, 'k': 0.3115, 'l': 0.1711
 }
 
 def calculate_probability(features):
-    # 執行標準化轉換
     scaled = {k: (features[k] - MEANS[k]) / SCALES[k] if SCALES[k] != 0 else 0 for k in features}
 
+    # [修正] 將 i, j, k, l 四個特徵納入總分計算
     z = INTERCEPT \
         + WEIGHTS['a'] * scaled['a'] \
         + WEIGHTS['b'] * scaled['b'] \
@@ -33,13 +36,16 @@ def calculate_probability(features):
         + WEIGHTS['e'] * scaled['e'] \
         + WEIGHTS['f'] * scaled['f'] \
         + WEIGHTS['g'] * scaled['g'] \
-        + WEIGHTS['h'] * scaled['h']
+        + WEIGHTS['h'] * scaled['h'] \
+        + WEIGHTS['i'] * scaled['i'] \
+        + WEIGHTS['j'] * scaled['j'] \
+        + WEIGHTS['k'] * scaled['k'] \
+        + WEIGHTS['l'] * scaled['l']
 
     z = max(min(z, 500), -500) 
     return 1 / (1 + math.exp(-z))
 
 def track_game_state(file_path):
-    """分析單一盤面，回傳該盤面的所有追蹤紀錄"""
     states = getRound(file_path)
     players = ['E', 'S', 'W', 'N']
     file_name = Path(file_path).name
@@ -55,6 +61,9 @@ def track_game_state(file_path):
     }
 
     tracker_log = []
+    
+    # [新增] 全域棄牌計數器
+    global_discard_count = {}
 
     for j in range(1, len(states.state)):
         step_data = states.state[j].stepData
@@ -91,11 +100,27 @@ def track_game_state(file_path):
 
                 stats['last_discard_type'] = action
 
+                # [新增] 第幾張判斷邏輯
+                discard_nth = 0
+                tile_name = "" 
                 if tile_str.isdigit():
                     card_num = int(tile_str)
                     suit = card_num // 100
                     face_value = (card_num // 10) % 10
 
+                    if suit == 4:
+                        honor_dict = {1: '東', 2: '南', 3: '西', 4: '北', 5: '白', 6: '發', 7: '中'}
+                        tile_name = honor_dict.get(face_value, f"{face_value}字")
+                    else:
+                        type_dict = {0: '花', 1: '萬', 2: '筒', 3: '條'}
+                        if suit in type_dict:
+                            tile_name = f"{face_value}{type_dict[suit]}"
+                    
+                    if tile_name:
+                        global_discard_count[tile_name] = global_discard_count.get(tile_name, 0) + 1
+                        discard_nth = global_discard_count[tile_name]
+
+                    # 更新基礎特徵數量
                     if suit in (1, 2, 3) and 3 <= face_value <= 7:
                         stats['discard_3_to_7'] += 1
 
@@ -124,14 +149,18 @@ def track_game_state(file_path):
                 features = {
                     'a': turn, 'b': stats['meld_count'], 'c': feat_c,
                     'd': feat_d, 'e': feat_e, 'f': feat_f,
-                    'g': feat_g, 'h': feat_h
+                    'g': feat_g, 'h': feat_h,
+                    # [新增] One-hot 特徵寫入
+                    'i': 1 if discard_nth == 1 else 0,
+                    'j': 1 if discard_nth == 2 else 0,
+                    'k': 1 if discard_nth == 3 else 0,
+                    'l': 1 if discard_nth == 4 else 0
                 }
 
                 pred_prob = calculate_probability(features)
 
                 player_state_obj = states.get_player(states.state[j], actor_loc)
                 actual_shanten = player_state_obj.shantenCount
-
                 action_name = "手切" if action == "HD" else "摸切"
 
                 tracker_log.append({
@@ -151,7 +180,9 @@ def track_game_state(file_path):
                         '字牌比例': round(feat_e, 4),
                         '摸切比例': round(feat_f, 4),
                         '連續摸切強度': round(feat_g, 4),
-                        '摸切轉手切': round(feat_h, 4)
+                        '摸切轉手切': round(feat_h, 4),
+                        '第一張被打出': features['i'], '第二張被打出': features['j'], 
+                        '第三張被打出': features['k'], '第四張被打出': features['l']
                     }
                 })
                 
@@ -198,6 +229,7 @@ if __name__ == "__main__":
     if master_log:
         correct_predictions = 0
         total_predictions = len(master_log)
+        error_log = [] 
 
         for log in master_log:
             is_actually_tenpai = 1 if log['實際向聽數'] <= 0 else 0
@@ -205,6 +237,13 @@ if __name__ == "__main__":
             
             if is_actually_tenpai == is_predicted_tenpai:
                 correct_predictions += 1
+            else:
+                error_item = log.copy()
+                if is_predicted_tenpai == 1 and is_actually_tenpai == 0:
+                    error_item['錯誤類型'] = "誤報 (實際未聽，猜測已聽)"
+                else:
+                    error_item['錯誤類型'] = "漏報 (實際已聽，猜測未聽)"
+                error_log.append(error_item)
                 
         accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
 
@@ -216,6 +255,7 @@ if __name__ == "__main__":
             print(f"失敗盤面數: {fail_count} (請查看 Logistic_Failed_Files_Log.txt)")
         print(f"總分析步數 (樣本數): {total_predictions}")
         print(f"預測正確次數: {correct_predictions}")
+        print(f"判斷錯誤次數: {len(error_log)}")
         print(f"整體準確率 (Accuracy): {accuracy:.2%}")
         print("="*40)
 
@@ -237,5 +277,22 @@ if __name__ == "__main__":
         print(f"\n📁 完整資料已儲存！")
         print(f" 📊 Excel 報表: {excel_name}")
         print(f" 📄 JSON 檔案: {json_name}")
+
+        if error_log:
+            error_excel_name = "Batch_Logistic_Error_Tracking.xlsx"
+            flat_error_log = []
+            for log in error_log:
+                flat_item = log.copy()
+                features = flat_item.pop('特徵值')
+                flat_item.update(features)
+                flat_error_log.append(flat_item)
+            
+            df_error = pd.DataFrame(flat_error_log)
+            cols = list(df_error.columns)
+            cols.insert(4, cols.pop(cols.index('錯誤類型')))
+            df_error = df_error[cols]
+            df_error.to_excel(error_excel_name, index=False)
+            print(f" ❌ 錯誤判斷報表 (僅列出猜錯的步驟): {error_excel_name}")
+
     else:
         print("\n沒有成功產出任何追蹤紀錄。")

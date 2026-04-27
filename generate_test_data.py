@@ -56,6 +56,9 @@ if __name__ == "__main__":
         }
 
         game_snapshots = []
+        
+        # [加入] 跨玩家的全域丟牌計數器
+        global_discard_count = {}
 
         for j in range(1, len(states.state)):
             step_data = states.state[j].stepData
@@ -80,6 +83,27 @@ if __name__ == "__main__":
                     stats['total_discard'] += 1
 
                     tile_str = step_data[3] if len(step_data) > 3 else ""
+                    
+                    # [加入] 第幾張判斷與牌名轉換邏輯
+                    discard_nth = 0
+                    tile_name = "" 
+
+                    if tile_str and tile_str.isdigit():
+                        card_num = int(tile_str)
+                        suit = card_num // 100
+                        face_value = (card_num // 10) % 10
+                        
+                        if suit == 4:
+                            honor_dict = {1: '東', 2: '南', 3: '西', 4: '北', 5: '白', 6: '發', 7: '中'}
+                            tile_name = honor_dict.get(face_value, f"{face_value}字")
+                        else:
+                            type_dict = {0: '花', 1: '萬', 2: '筒', 3: '條'}
+                            if suit in type_dict:
+                                tile_name = f"{face_value}{type_dict[suit]}"
+                        
+                        if tile_name:
+                            global_discard_count[tile_name] = global_discard_count.get(tile_name, 0) + 1
+                            discard_nth = global_discard_count[tile_name]
 
                     if action == 'MD':
                         stats['moqie_count'] += 1
@@ -128,16 +152,25 @@ if __name__ == "__main__":
                         '玩家位置': actor_loc,
                         'Step_ID': j,
                         '動作類型': action,
-                        '丟棄的牌': tile_str,
+                        
+                        '丟棄的牌(代碼)': tile_str,
+                        '丟棄的牌(名稱)': tile_name, 
+
                         '累積丟牌數': td,
                         'feat_a_巡數': turn,
                         'feat_b_吃碰數': stats['meld_count'],
+
                         'feat_c_中張比例': round(feat_c, 4),
                         'feat_d_花色集中度': round(feat_d, 4),
                         'feat_e_字牌比例': round(feat_e, 4),
                         'feat_f_摸切比例': round(feat_f, 4),
                         'feat_g_連續摸切強度': round(feat_g, 4),
                         'feat_h_摸切轉手切': round(feat_h, 4),
+                        'feat_i_第一張被打出': 1 if discard_nth == 1 else 0,
+                        'feat_j_第二張被打出': 1 if discard_nth == 2 else 0,
+                        'feat_k_第三張被打出': 1 if discard_nth == 3 else 0,
+                        'feat_l_第四張被打出': 1 if discard_nth == 4 else 0,
+
                         'Target_是否已聽牌': is_tenpai
                     }
 

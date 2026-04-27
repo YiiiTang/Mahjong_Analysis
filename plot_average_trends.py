@@ -19,15 +19,18 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     valid_turns = turn_counts[turn_counts >= 5].index
     df_valid = df[df['當下巡數'].isin(valid_turns)]
 
+    # [新增] 將 4 個新特徵加入計算清單
     features_to_calc = [
         '中張比例', '花色集中度', '字牌比例', '摸切比例', 
-        '連續摸切強度', '摸切轉手切', '預測聽牌分數'
+        '連續摸切強度', '摸切轉手切', '第一張被打出', '第二張被打出', 
+        '第三張被打出', '第四張被打出', '預測聽牌分數'
     ]
     
     df_grouped = df_valid.groupby('當下巡數')[features_to_calc].agg(['mean', 'std'])
 
-    plt.figure(figsize=(14, 8))
+    plt.figure(figsize=(15, 9))
     
+    # [新增] 為新特徵配置顏色與樣式
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3.5, 'ls': '--'},
         '中張比例': {'color': 'tab:blue', 'marker': 'o', 'lw': 2, 'ls': '-'},
@@ -35,7 +38,11 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
         '字牌比例': {'color': 'tab:green', 'marker': '^', 'lw': 2, 'ls': '-'},
         '摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 2, 'ls': '-'},
         '連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 2, 'ls': '-'},
-        '摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 2, 'ls': '-'}
+        '摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 2, 'ls': '-'},
+        '第一張被打出': {'color': 'tab:cyan', 'marker': '1', 'lw': 2, 'ls': '-'},
+        '第二張被打出': {'color': 'tab:pink', 'marker': '2', 'lw': 2, 'ls': '-'},
+        '第三張被打出': {'color': 'tab:olive', 'marker': '3', 'lw': 2, 'ls': '-'},
+        '第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 2, 'ls': '-'}
     }
 
     for feature, style in plot_styles.items():
@@ -61,7 +68,8 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     print(f"✅ 已儲存綜合比較圖: {save_path_all}")
     plt.close()
 
-    fig, axes = plt.subplots(nrows=4, ncols=2, figsize=(16, 14), sharex=True)
+    # [調整] 將子圖表改為 4x3 的排列方式，以容納 11 個指標
+    fig, axes = plt.subplots(nrows=4, ncols=3, figsize=(18, 16), sharex=True)
     fig.suptitle('所有牌譜平均：各特徵變化趨勢與變異程度 (含標準差陰影)', fontsize=18, fontweight='bold')
     axes = axes.flatten()
 
@@ -86,10 +94,15 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
         ax.set_xticks(x_vals)
         ax.legend(loc='upper left', fontsize=10)
 
-    axes[7].set_visible(False)
+    # 隱藏多出來的第 12 個空白子圖表
+    if len(axes) > len(features_list):
+        for j in range(len(features_list), len(axes)):
+            axes[j].set_visible(False)
     
-    axes[5].set_xlabel('當下巡數', fontsize=12)
-    axes[6].set_xlabel('當下巡數', fontsize=12)
+    # 將最底層的 X 軸加上標籤
+    axes[8].set_xlabel('當下巡數', fontsize=12)
+    axes[9].set_xlabel('當下巡數', fontsize=12)
+    axes[10].set_xlabel('當下巡數', fontsize=12)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     save_path_subplots = os.path.join(output_dir, "All_Games_Average_Subplots.png")

@@ -40,6 +40,7 @@ def batch_investigate_games():
     output_dir = "Batch_Game_Investigation"
     os.makedirs(output_dir, exist_ok=True)
 
+    # [新增] 將新特徵繪圖樣式加入
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3, 'ls': '--'},
         '中張比例': {'color': 'tab:blue', 'marker': 'o', 'lw': 1.5, 'ls': '-'},
@@ -48,7 +49,11 @@ def batch_investigate_games():
         '摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 1.5, 'ls': '-'},
         '連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 1.5, 'ls': '-'},
         '摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 1.5, 'ls': '-'},
-        '當下副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'}
+        '當下副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        '第一張被打出': {'color': 'tab:cyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        '第二張被打出': {'color': 'tab:pink', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        '第三張被打出': {'color': 'tab:olive', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        '第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'}
     }
 
     players = ['E', 'S', 'W', 'N']
@@ -101,9 +106,10 @@ def batch_investigate_games():
             
             ax.set_xticks(df_player['當下巡數'].astype(int))
             
+            # 調整圖例位置，避免被多出來的標籤擋住圖表
             ax.legend(loc='center left', bbox_to_anchor=(1.10, 0.5), fontsize=10)
             ax.grid(True, linestyle='--', alpha=0.6)
-            plt.tight_layout(rect=[0, 0, 0.9, 1])
+            plt.tight_layout(rect=[0, 0, 0.85, 1])
 
             win_suffix = "_WIN" if is_winner else ""
             safe_name = target_game.replace(".txt", "")

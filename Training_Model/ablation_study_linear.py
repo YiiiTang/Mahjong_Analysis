@@ -4,6 +4,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 import matplotlib.font_manager as fm
+import re
 
 plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
 plt.rcParams['axes.unicode_minus'] = False
@@ -11,9 +12,11 @@ plt.rcParams['axes.unicode_minus'] = False
 df_train = pd.read_excel("analyze_all_players_snapshots.xlsx").fillna(0)
 df_test = pd.read_excel("analyze_test_snapshots.xlsx").fillna(0) 
 
+# [更新] 加入完整的 12 個特徵
 feature_cols = [
     'feat_a_巡數', 'feat_b_吃碰數', 'feat_c_中張比例', 'feat_d_花色集中度',
-    'feat_e_字牌比例', 'feat_f_摸切比例', 'feat_g_連續摸切強度', 'feat_h_摸切轉手切'
+    'feat_e_字牌比例', 'feat_f_摸切比例', 'feat_g_連續摸切強度', 'feat_h_摸切轉手切', 
+    'feat_i_第一張被打出', 'feat_j_第二張被打出', 'feat_k_第三張被打出', 'feat_l_第四張被打出'
 ]
 target_col = 'Target_是否已聽牌'
 
@@ -71,7 +74,8 @@ for rank, (feat, drop) in enumerate(sorted_importance, 1):
     else:
         print(f"{rank}. {feat}: 準確率反升了 {-drop:.4%} (可能是干擾特徵)")
 
-features_for_plot = [f.replace('feat_', '') for f in feature_cols]
+# [更新] 將特徵前面的 feat_x_ 拔掉，讓畫圖顯示乾淨的中文名
+features_for_plot = [re.sub(r'^feat_[a-z]_', '', f) for f in feature_cols]
 drops_percent_for_plot = [importance_results[f] * 100 for f in feature_cols]
 
 features_plot_rev = features_for_plot[::-1]

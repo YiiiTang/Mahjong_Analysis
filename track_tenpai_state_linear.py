@@ -4,26 +4,29 @@ from pathlib import Path
 from analyze import getRound
 from fileProcess import RoundState, States, playerState
 
-# --- 模型參數 (請依訓練結果填入) ---
+# --- 模型參數 (請依訓練結果填入最新的數值) ---
 INTERCEPT = 0.1865  
 WEIGHTS = {
-    'a': 0.1370, 'b': 0.0673, 'c': 0.0571, 'd': 0.0726,
-    'e': -0.0510, 'f': -0.0084, 'g': -0.0026, 'h': 0.0079    
+    'a': 0.1398, 'b': 0.0667, 'c': 0.0566, 'd': 0.0731,
+    'e': -0.0498, 'f': -0.0069, 'g': -0.0027, 'h': 0.0072,
+    'i': 0.0034, 'j': 0.0009, 'k': -0.0052, 'l': -0.0028
 }
 
 MEANS = {
     'a': 5.6080, 'b': 0.8770, 'c': 0.1402, 'd': 0.5261,
-    'e': 0.5964, 'f': 0.1816, 'g': 0.0128, 'h': 0.0165
+    'e': 0.5964, 'f': 0.1816, 'g': 0.0128, 'h': 0.0165,
+    'i': 0.5834, 'j': 0.2783, 'k': 0.1074, 'l': 0.0308
 }
 SCALES = {
     'a': 3.3261, 'b': 0.9675, 'c': 0.1704, 'd': 0.3467,
-    'e': 0.3033, 'f': 0.1883, 'g': 0.0480, 'h': 0.0433
+    'e': 0.3033, 'f': 0.1883, 'g': 0.0480, 'h': 0.0433,
+    'i': 0.4930, 'j': 0.4482, 'k': 0.3097, 'l': 0.1728
 }
 
 def calculate_linear_score(features):
-    # 執行標準化轉換： (原始值 - 平均值) / 標準差
     scaled = {k: (features[k] - MEANS[k]) / SCALES[k] if SCALES[k] != 0 else 0 for k in features}
     
+    # [修正] 將 i, j, k, l 四個特徵納入總分計算
     score = INTERCEPT \
         + WEIGHTS['a'] * scaled['a'] \
         + WEIGHTS['b'] * scaled['b'] \
@@ -32,7 +35,11 @@ def calculate_linear_score(features):
         + WEIGHTS['e'] * scaled['e'] \
         + WEIGHTS['f'] * scaled['f'] \
         + WEIGHTS['g'] * scaled['g'] \
-        + WEIGHTS['h'] * scaled['h']
+        + WEIGHTS['h'] * scaled['h'] \
+        + WEIGHTS['i'] * scaled['i'] \
+        + WEIGHTS['j'] * scaled['j'] \
+        + WEIGHTS['k'] * scaled['k'] \
+        + WEIGHTS['l'] * scaled['l']
     
     return score
 
@@ -52,6 +59,9 @@ def track_game_state_linear(file_path):
     }
 
     tracker_log = []
+    
+    # [新增] 全域棄牌計數器
+    global_discard_count = {}
 
     for j in range(1, len(states.state)):
         step_data = states.state[j].stepData
@@ -82,9 +92,26 @@ def track_game_state_linear(file_path):
                         stats['moqie_to_shouqie_count'] += 1
                     stats['current_continuous_moqie'] = 0
 
-                if tile_str.isdigit():
+                # [新增] 第幾張判斷邏輯
+                discard_nth = 0
+                tile_name = "" 
+                if tile_str and tile_str.isdigit():
                     card_num = int(tile_str)
                     suit, val = card_num // 100, (card_num // 10) % 10
+                    
+                    if suit == 4:
+                        honor_dict = {1: '東', 2: '南', 3: '西', 4: '北', 5: '白', 6: '發', 7: '中'}
+                        tile_name = honor_dict.get(val, f"{val}字")
+                    else:
+                        type_dict = {0: '花', 1: '萬', 2: '筒', 3: '條'}
+                        if suit in type_dict:
+                            tile_name = f"{val}{type_dict[suit]}"
+                    
+                    if tile_name:
+                        global_discard_count[tile_name] = global_discard_count.get(tile_name, 0) + 1
+                        discard_nth = global_discard_count[tile_name]
+
+                    # 更新基礎特徵數量
                     if suit in (1, 2, 3) and 3 <= val <= 7: stats['discard_3_to_7'] += 1
                     if suit == 1: stats['discard_wan'] += 1
                     elif suit == 2: stats['discard_tong'] += 1
@@ -103,7 +130,15 @@ def track_game_state_linear(file_path):
                 feat_g = safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn)
                 feat_h = safe_div(stats['moqie_to_shouqie_count'], turn)
 
-                features = {'a': turn, 'b': stats['meld_count'], 'c': feat_c, 'd': feat_d, 'e': feat_e, 'f': feat_f, 'g': feat_g, 'h': feat_h}
+                features = {
+                    'a': turn, 'b': stats['meld_count'], 'c': feat_c, 'd': feat_d, 
+                    'e': feat_e, 'f': feat_f, 'g': feat_g, 'h': feat_h,
+                    # [新增] One-hot 特徵寫入
+                    'i': 1 if discard_nth == 1 else 0,
+                    'j': 1 if discard_nth == 2 else 0,
+                    'k': 1 if discard_nth == 3 else 0,
+                    'l': 1 if discard_nth == 4 else 0
+                }
                 pred_score = calculate_linear_score(features)
 
                 actual_shanten = states.get_player(states.state[j], actor_loc).shantenCount
@@ -113,7 +148,9 @@ def track_game_state_linear(file_path):
                     '特徵值': {
                         '當下巡數': turn, '當下副露': stats['meld_count'], '中張比例': round(feat_c, 4),
                         '花色集中度': round(feat_d, 4), '字牌比例': round(feat_e, 4), '摸切比例': round(feat_f, 4),
-                        '連續摸切強度': round(feat_g, 4), '摸切轉手切': round(feat_h, 4)
+                        '連續摸切強度': round(feat_g, 4), '摸切轉手切': round(feat_h, 4),
+                        '第一張被打出': features['i'], '第二張被打出': features['j'], 
+                        '第三張被打出': features['k'], '第四張被打出': features['l']
                     }
                 })
     return tracker_log
@@ -159,6 +196,7 @@ if __name__ == "__main__":
     if master_log:
         correct_predictions = 0
         total_predictions = len(master_log)
+        error_log = [] 
 
         for log in master_log:
             is_actually_tenpai = 1 if log['實際向聽數'] <= 0 else 0
@@ -166,6 +204,13 @@ if __name__ == "__main__":
             
             if is_actually_tenpai == is_predicted_tenpai:
                 correct_predictions += 1
+            else:
+                error_item = log.copy()
+                if is_predicted_tenpai == 1 and is_actually_tenpai == 0:
+                    error_item['錯誤類型'] = "誤報 (實際未聽，猜測已聽)"
+                else:
+                    error_item['錯誤類型'] = "漏報 (實際已聽，猜測未聽)"
+                error_log.append(error_item)
                 
         accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
 
@@ -177,6 +222,7 @@ if __name__ == "__main__":
             print(f"失敗盤面數: {fail_count} (請查看 {error_file_name})")
         print(f"總分析步數 (樣本數): {total_predictions}")
         print(f"預測正確次數: {correct_predictions}")
+        print(f"判斷錯誤次數: {len(error_log)}")
         print(f"整體準確率 (Accuracy): {accuracy:.2%}")
         print("="*40)
 
@@ -198,5 +244,22 @@ if __name__ == "__main__":
         print(f"\n📁 線性迴歸完整資料已儲存！")
         print(f" 📊 Excel 報表: {excel_name}")
         print(f" 📄 JSON 檔案: {json_name}")
+
+        if error_log:
+            error_excel_name = "Batch_Linear_Error_Tracking.xlsx"
+            flat_error_log = []
+            for log in error_log:
+                flat_item = log.copy()
+                features = flat_item.pop('特徵值')
+                flat_item.update(features)
+                flat_error_log.append(flat_item)
+            
+            df_error = pd.DataFrame(flat_error_log)
+            cols = list(df_error.columns)
+            cols.insert(4, cols.pop(cols.index('錯誤類型')))
+            df_error = df_error[cols]
+            df_error.to_excel(error_excel_name, index=False)
+            print(f" ❌ 錯誤判斷報表 (僅列出猜錯的步驟): {error_excel_name}")
+
     else:
         print("\n沒有成功產出任何追蹤紀錄。")
