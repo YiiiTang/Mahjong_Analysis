@@ -6,28 +6,34 @@ from analyze import getRound
 from fileProcess import RoundState, States, playerState
 
 # --- 模型參數 (請依訓練結果填入最新的數值) ---
-INTERCEPT = -2.7291  
+INTERCEPT = -2.4607  
 WEIGHTS = {
-    'a': 1.2849, 'b': 0.5394, 'c': 0.4233, 'd': 0.3736,
-    'e': -0.8156, 'f': -0.0841, 'g': -0.0894, 'h': 0.0351,
-    'i': 0.0, 'j': 0.0, 'k': 0.0, 'l': 0.0  # 請更新為訓練後的數值
+    'a': 1.3989, 'b': 0.5679, 'c': 0.4445, 'd': 0.1506,
+    'e': -0.1088, 'f': -0.0370, 'g': 0.3046, 'h': 0.1465,
+    'i': 0.0047, 'j': 0.0027, 'k': -0.4535, 'l': -0.1225,
+    'm': -0.0442, 'n': -0.0505, 'o': 0.1197, 'p': 0.0888,
+    'q': -0.0016, 'r': -0.0105
 }
 
 MEANS = {
-    'a': 5.5966, 'b': 0.8766, 'c': 0.1406, 'd': 0.5281,
-    'e': 0.5972, 'f': 0.1803, 'g': 0.0127, 'h': 0.0165,
-    'i': 0.5848, 'j': 0.2761, 'k': 0.1089, 'l': 0.0302
+    'a': 5.5966, 'b': 0.8766, 'c': 0.5281, 'd': 0.1803,
+    'e': 0.0127, 'f': 0.0165, 'g': 0.1947, 'h': 0.0552,
+    'i': 0.0086, 'j': 0.0008, 'k': 0.1716, 'l': 0.1207,
+    'm': 0.0670, 'n': 0.0231, 'o': 0.2185, 'p': 0.1003,
+    'q': 0.0333, 'r': 0.0063
 }
+
 SCALES = {
-    'a': 3.3296, 'b': 0.9683, 'c': 0.1708, 'd': 0.3470,
-    'e': 0.3043, 'f': 0.1870, 'g': 0.0484, 'h': 0.0436,
-    'i': 0.4928, 'j': 0.4471, 'k': 0.3115, 'l': 0.1711
+    'a': 3.3296, 'b': 0.9683, 'c': 0.3470, 'd': 0.1870,
+    'e': 0.0484, 'f': 0.0436, 'g': 0.3959, 'h': 0.2283,
+    'i': 0.0924, 'j': 0.0278, 'k': 0.3771, 'l': 0.3258,
+    'm': 0.2500, 'n': 0.1502, 'o': 0.4133, 'p': 0.3003,
+    'q': 0.1794, 'r': 0.0791
 }
 
 def calculate_probability(features):
     scaled = {k: (features[k] - MEANS[k]) / SCALES[k] if SCALES[k] != 0 else 0 for k in features}
 
-    # [修正] 將 i, j, k, l 四個特徵納入總分計算
     z = INTERCEPT \
         + WEIGHTS['a'] * scaled['a'] \
         + WEIGHTS['b'] * scaled['b'] \
@@ -40,7 +46,13 @@ def calculate_probability(features):
         + WEIGHTS['i'] * scaled['i'] \
         + WEIGHTS['j'] * scaled['j'] \
         + WEIGHTS['k'] * scaled['k'] \
-        + WEIGHTS['l'] * scaled['l']
+        + WEIGHTS['l'] * scaled['l'] \
+        + WEIGHTS['m'] * scaled['m'] \
+        + WEIGHTS['n'] * scaled['n'] \
+        + WEIGHTS['o'] * scaled['o'] \
+        + WEIGHTS['p'] * scaled['p'] \
+        + WEIGHTS['q'] * scaled['q'] \
+        + WEIGHTS['r'] * scaled['r']
 
     z = max(min(z, 500), -500) 
     return 1 / (1 + math.exp(-z))
@@ -53,7 +65,7 @@ def track_game_state(file_path):
     player_stats = {
         loc: {
             'turn_count': 0, 'meld_count': 0, 'total_discard': 0,
-            'discard_3_to_7': 0, 'discard_wan': 0, 'discard_tong': 0,
+            'discard_wan': 0, 'discard_tong': 0,
             'discard_tiao': 0, 'discard_zi': 0, 'moqie_count': 0,
             'current_continuous_moqie': 0, 'max_continuous_moqie': 0,
             'moqie_to_shouqie_count': 0, 'last_discard_type': None
@@ -61,8 +73,6 @@ def track_game_state(file_path):
     }
 
     tracker_log = []
-    
-    # [新增] 全域棄牌計數器
     global_discard_count = {}
 
     for j in range(1, len(states.state)):
@@ -100,13 +110,24 @@ def track_game_state(file_path):
 
                 stats['last_discard_type'] = action
 
-                # [新增] 第幾張判斷邏輯
                 discard_nth = 0
                 tile_name = "" 
+                
+                is_zhong = False
+                is_zi = False
+                is_bian = False
+                
                 if tile_str.isdigit():
                     card_num = int(tile_str)
                     suit = card_num // 100
                     face_value = (card_num // 10) % 10
+
+                    if suit in (1, 2, 3) and 3 <= face_value <= 7:
+                        is_zhong = True
+                    elif suit == 4:
+                        is_zi = True
+                    elif suit in (1, 2, 3) and face_value in (1, 2, 8, 9):
+                        is_bian = True
 
                     if suit == 4:
                         honor_dict = {1: '東', 2: '南', 3: '西', 4: '北', 5: '白', 6: '發', 7: '中'}
@@ -119,10 +140,6 @@ def track_game_state(file_path):
                     if tile_name:
                         global_discard_count[tile_name] = global_discard_count.get(tile_name, 0) + 1
                         discard_nth = global_discard_count[tile_name]
-
-                    # 更新基礎特徵數量
-                    if suit in (1, 2, 3) and 3 <= face_value <= 7:
-                        stats['discard_3_to_7'] += 1
 
                     if suit == 1:
                         stats['discard_wan'] += 1
@@ -137,24 +154,33 @@ def track_game_state(file_path):
                 turn = stats['turn_count']
                 def safe_div(a, b): return a / b if b > 0 else 0.0
 
-                feat_c = safe_div(stats['discard_3_to_7'], td)
                 number_tiles = stats['discard_wan'] + stats['discard_tong'] + stats['discard_tiao']
                 max_suit = max(stats['discard_wan'], stats['discard_tong'], stats['discard_tiao'])
-                feat_d = 1.0 - safe_div(max_suit, number_tiles)
-                feat_e = safe_div(stats['discard_zi'], td)
-                feat_f = safe_div(stats['moqie_count'], td)
-                feat_g = safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn)
-                feat_h = safe_div(stats['moqie_to_shouqie_count'], turn)
+                
+                feat_c_concentration = 1.0 - safe_div(max_suit, number_tiles)
+                feat_d_moqie_rate = safe_div(stats['moqie_count'], td)
+                feat_e_moqie_strength = safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn)
+                feat_f_mo_to_shou = safe_div(stats['moqie_to_shouqie_count'], turn)
 
                 features = {
-                    'a': turn, 'b': stats['meld_count'], 'c': feat_c,
-                    'd': feat_d, 'e': feat_e, 'f': feat_f,
-                    'g': feat_g, 'h': feat_h,
-                    # [新增] One-hot 特徵寫入
-                    'i': 1 if discard_nth == 1 else 0,
-                    'j': 1 if discard_nth == 2 else 0,
-                    'k': 1 if discard_nth == 3 else 0,
-                    'l': 1 if discard_nth == 4 else 0
+                    'a': turn, 
+                    'b': stats['meld_count'], 
+                    'c': feat_c_concentration,
+                    'd': feat_d_moqie_rate, 
+                    'e': feat_e_moqie_strength, 
+                    'f': feat_f_mo_to_shou,
+                    'g': 1 if (is_zhong and discard_nth == 1) else 0,
+                    'h': 1 if (is_zhong and discard_nth == 2) else 0,
+                    'i': 1 if (is_zhong and discard_nth == 3) else 0,
+                    'j': 1 if (is_zhong and discard_nth == 4) else 0,
+                    'k': 1 if (is_zi and discard_nth == 1) else 0,
+                    'l': 1 if (is_zi and discard_nth == 2) else 0,
+                    'm': 1 if (is_zi and discard_nth == 3) else 0,
+                    'n': 1 if (is_zi and discard_nth == 4) else 0,
+                    'o': 1 if (is_bian and discard_nth == 1) else 0,
+                    'p': 1 if (is_bian and discard_nth == 2) else 0,
+                    'q': 1 if (is_bian and discard_nth == 3) else 0,
+                    'r': 1 if (is_bian and discard_nth == 4) else 0
                 }
 
                 pred_prob = calculate_probability(features)
@@ -172,17 +198,24 @@ def track_game_state(file_path):
                     '實際向聽數': actual_shanten,
                     '預測聽牌機率': round(pred_prob, 4),
                     '特徵值': {
-                        '當下巡數': turn,
-                        '當下副露': stats['meld_count'],
-                        '當下連續摸切': stats['current_continuous_moqie'],
-                        '中張比例': round(feat_c, 4),
-                        '花色集中度': round(feat_d, 4),
-                        '字牌比例': round(feat_e, 4),
-                        '摸切比例': round(feat_f, 4),
-                        '連續摸切強度': round(feat_g, 4),
-                        '摸切轉手切': round(feat_h, 4),
-                        '第一張被打出': features['i'], '第二張被打出': features['j'], 
-                        '第三張被打出': features['k'], '第四張被打出': features['l']
+                        'feat_a_巡數': turn,
+                        'feat_b_吃碰數': stats['meld_count'],
+                        'feat_c_花色集中度': round(feat_c_concentration, 4),
+                        'feat_d_摸切比例': round(feat_d_moqie_rate, 4),
+                        'feat_e_連續摸切強度': round(feat_e_moqie_strength, 4),
+                        'feat_f_摸切轉手切': round(feat_f_mo_to_shou, 4),
+                        'feat_g_中張第一張被打出': features['g'], 
+                        'feat_h_中張第二張被打出': features['h'], 
+                        'feat_i_中張第三張被打出': features['i'], 
+                        'feat_j_中張第四張被打出': features['j'],
+                        'feat_k_字牌第一張被打出': features['k'],
+                        'feat_l_字牌第二張被打出': features['l'],
+                        'feat_m_字牌第三張被打出': features['m'],
+                        'feat_n_字牌第四張被打出': features['n'],
+                        'feat_o_邊張第一張被打出': features['o'],
+                        'feat_p_邊張第二張被打出': features['p'],
+                        'feat_q_邊張第三張被打出': features['q'],
+                        'feat_r_邊張第四張被打出': features['r']
                     }
                 })
                 

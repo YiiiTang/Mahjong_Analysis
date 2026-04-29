@@ -40,20 +40,27 @@ def batch_investigate_games():
     output_dir = "Batch_Game_Investigation"
     os.makedirs(output_dir, exist_ok=True)
 
-    # [新增] 將新特徵繪圖樣式加入
+    turn_col = 'feat_a_巡數' if 'feat_a_巡數' in df.columns else '當下巡數'
+
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3, 'ls': '--'},
-        '中張比例': {'color': 'tab:blue', 'marker': 'o', 'lw': 1.5, 'ls': '-'},
-        '花色集中度': {'color': 'tab:orange', 'marker': 's', 'lw': 1.5, 'ls': '-'},
-        '字牌比例': {'color': 'tab:green', 'marker': '^', 'lw': 1.5, 'ls': '-'},
-        '摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 1.5, 'ls': '-'},
-        '連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 1.5, 'ls': '-'},
-        '摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 1.5, 'ls': '-'},
-        '當下副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        '第一張被打出': {'color': 'tab:cyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        '第二張被打出': {'color': 'tab:pink', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        '第三張被打出': {'color': 'tab:olive', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        '第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'}
+        'feat_b_吃碰數': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_c_花色集中度': {'color': 'tab:orange', 'marker': 's', 'lw': 1.5, 'ls': '-'},
+        'feat_d_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 1.5, 'ls': '-'},
+        'feat_e_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 1.5, 'ls': '-'},
+        'feat_f_摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 1.5, 'ls': '-'},
+        'feat_g_中張第一張被打出': {'color': 'tab:blue', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_h_中張第二張被打出': {'color': 'tab:blue', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_i_中張第三張被打出': {'color': 'tab:blue', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_j_中張第四張被打出': {'color': 'tab:blue', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_k_字牌第一張被打出': {'color': 'tab:green', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_l_字牌第二張被打出': {'color': 'tab:green', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_m_字牌第三張被打出': {'color': 'tab:green', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_n_字牌第四張被打出': {'color': 'tab:green', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_o_邊張第一張被打出': {'color': 'darkcyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_p_邊張第二張被打出': {'color': 'darkcyan', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_q_邊張第三張被打出': {'color': 'darkcyan', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_r_邊張第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'}
     }
 
     players = ['E', 'S', 'W', 'N']
@@ -75,23 +82,24 @@ def batch_investigate_games():
             continue
 
         for player in players:
-            df_player = df_game[df_game['玩家'] == player].sort_values(by='當下巡數')
+            df_player = df_game[df_game['玩家'] == player].sort_values(by=turn_col)
             if df_player.empty: 
                 continue
 
-            plt.figure(figsize=(12, 6))
+            plt.figure(figsize=(14, 7))
             ax = plt.gca()
             
             for feature, style in plot_styles.items():
                 if feature in df_player.columns:
-                    ax.plot(df_player['當下巡數'], df_player[feature], 
-                             label=feature, color=style['color'], 
+                    display_label = feature.replace('feat_', '')
+                    ax.plot(df_player[turn_col], df_player[feature], 
+                             label=display_label, color=style['color'], 
                              marker=style['marker'], linewidth=style['lw'], 
                              linestyle=style['ls'], alpha=0.85)
 
             if '實際向聽數' in df_player.columns:
                 ax2 = ax.twinx()
-                ax2.plot(df_player['當下巡數'], df_player['實際向聽數'], color='gray', linestyle=':', marker='.', alpha=0.6)
+                ax2.plot(df_player[turn_col], df_player['實際向聽數'], color='gray', linestyle=':', marker='.', alpha=0.6)
                 ax2.set_ylabel('實際向聽數', color='gray')
                 ax2.invert_yaxis()
 
@@ -104,12 +112,11 @@ def batch_investigate_games():
             ax.set_xlabel('當下巡數', fontsize=12)
             ax.set_ylabel('特徵值 / 預測分數', fontsize=12)
             
-            ax.set_xticks(df_player['當下巡數'].astype(int))
+            ax.set_xticks(df_player[turn_col].astype(int))
             
-            # 調整圖例位置，避免被多出來的標籤擋住圖表
-            ax.legend(loc='center left', bbox_to_anchor=(1.10, 0.5), fontsize=10)
+            ax.legend(loc='center left', bbox_to_anchor=(1.10, 0.5), fontsize=9)
             ax.grid(True, linestyle='--', alpha=0.6)
-            plt.tight_layout(rect=[0, 0, 0.85, 1])
+            plt.tight_layout(rect=[0, 0, 0.82, 1])
 
             win_suffix = "_WIN" if is_winner else ""
             safe_name = target_game.replace(".txt", "")

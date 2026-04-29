@@ -100,9 +100,7 @@ if __name__ == "__main__":
                         suit = card_num // 100
                         face_value = (card_num // 10) % 10
                         
-                        # [調整] 將字牌獨立拉出來做中文對映
                         if suit == 4:
-                            # 依照系統底層 HONOR_LABELS 的設定：5=白, 6=發, 7=中
                             honor_dict = {1: '東', 2: '南', 3: '西', 4: '北', 5: '白', 6: '發', 7: '中'}
                             tile_name = honor_dict.get(face_value, f"{face_value}字")
                         else:
@@ -128,6 +126,10 @@ if __name__ == "__main__":
                         stats['current_continuous_moqie'] = 0
 
                     stats['last_discard_type'] = action
+                    
+                    is_zhong = False
+                    is_zi = False
+                    is_bian = False
 
                     if tile_str.isdigit():
                         card_num = int(tile_str)
@@ -136,6 +138,11 @@ if __name__ == "__main__":
 
                         if suit in (1, 2, 3) and 3 <= face_value <= 7:
                             stats['discard_3_to_7'] += 1
+                            is_zhong = True
+                        elif suit == 4:
+                            is_zi = True
+                        elif suit in (1, 2, 3) and face_value in (1, 2, 8, 9):
+                            is_bian = True
 
                         if suit == 1:
                             stats['discard_wan'] += 1
@@ -152,19 +159,13 @@ if __name__ == "__main__":
                     def safe_div(a, b):
                         return a / b if b > 0 else 0.0
 
-                    feat_c = safe_div(stats['discard_3_to_7'], td)
-
                     number_tiles = stats['discard_wan'] + stats['discard_tong'] + stats['discard_tiao']
                     max_suit = max(stats['discard_wan'], stats['discard_tong'], stats['discard_tiao'])
-                    feat_d = 1.0 - safe_div(max_suit, number_tiles)
-
-                    feat_e = safe_div(stats['discard_zi'], td)
-
-                    feat_f = safe_div(stats['moqie_count'], td)
-
-                    feat_g = safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn)
-
-                    feat_h = safe_div(stats['moqie_to_shouqie_count'], turn)
+                    
+                    feat_val_concentration = round(1.0 - safe_div(max_suit, number_tiles), 4)
+                    feat_val_moqie_rate = round(safe_div(stats['moqie_count'], td), 4)
+                    feat_val_moqie_strength = round(safe_div(max(stats['max_continuous_moqie'] - 2, 0), turn), 4)
+                    feat_val_mo_to_shou = round(safe_div(stats['moqie_to_shouqie_count'], turn), 4)
 
                     player_state = states.get_player(states.state[j], actor_loc)
                     is_tenpai = 1 if player_state.shantenCount <= 0 else 0
@@ -182,16 +183,25 @@ if __name__ == "__main__":
                         'feat_a_巡數': turn,
                         'feat_b_吃碰數': stats['meld_count'],
 
-                        'feat_c_中張比例': round(feat_c, 4),
-                        'feat_d_花色集中度': round(feat_d, 4),
-                        'feat_e_字牌比例': round(feat_e, 4),
-                        'feat_f_摸切比例': round(feat_f, 4),
-                        'feat_g_連續摸切強度': round(feat_g, 4),
-                        'feat_h_摸切轉手切': round(feat_h, 4),
-                        'feat_i_第一張被打出': 1 if discard_nth == 1 else 0,
-                        'feat_j_第二張被打出': 1 if discard_nth == 2 else 0,
-                        'feat_k_第三張被打出': 1 if discard_nth == 3 else 0,
-                        'feat_l_第四張被打出': 1 if discard_nth == 4 else 0,
+                        'feat_c_花色集中度': feat_val_concentration,
+                        'feat_d_摸切比例': feat_val_moqie_rate,
+                        'feat_e_連續摸切強度': feat_val_moqie_strength,
+                        'feat_f_摸切轉手切': feat_val_mo_to_shou,
+
+                        'feat_g_中張第一張被打出': 1 if (is_zhong and discard_nth == 1) else 0,
+                        'feat_h_中張第二張被打出': 1 if (is_zhong and discard_nth == 2) else 0,
+                        'feat_i_中張第三張被打出': 1 if (is_zhong and discard_nth == 3) else 0,
+                        'feat_j_中張第四張被打出': 1 if (is_zhong and discard_nth == 4) else 0,
+
+                        'feat_k_字牌第一張被打出': 1 if (is_zi and discard_nth == 1) else 0,
+                        'feat_l_字牌第二張被打出': 1 if (is_zi and discard_nth == 2) else 0,
+                        'feat_m_字牌第三張被打出': 1 if (is_zi and discard_nth == 3) else 0,
+                        'feat_n_字牌第四張被打出': 1 if (is_zi and discard_nth == 4) else 0,
+
+                        'feat_o_邊張第一張被打出': 1 if (is_bian and discard_nth == 1) else 0,
+                        'feat_p_邊張第二張被打出': 1 if (is_bian and discard_nth == 2) else 0,
+                        'feat_q_邊張第三張被打出': 1 if (is_bian and discard_nth == 3) else 0,
+                        'feat_r_邊張第四張被打出': 1 if (is_bian and discard_nth == 4) else 0,
 
                         'Target_是否已聽牌': is_tenpai
                     }

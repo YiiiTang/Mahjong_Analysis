@@ -12,11 +12,25 @@ plt.rcParams['axes.unicode_minus'] = False
 df_train = pd.read_excel("analyze_all_players_snapshots.xlsx").fillna(0)
 df_test = pd.read_excel("analyze_test_snapshots.xlsx").fillna(0) 
 
-# [更新] 加入完整的 12 個特徵
 feature_cols = [
-    'feat_a_巡數', 'feat_b_吃碰數', 'feat_c_中張比例', 'feat_d_花色集中度',
-    'feat_e_字牌比例', 'feat_f_摸切比例', 'feat_g_連續摸切強度', 'feat_h_摸切轉手切', 
-    'feat_i_第一張被打出', 'feat_j_第二張被打出', 'feat_k_第三張被打出', 'feat_l_第四張被打出'
+    'feat_a_巡數',
+    'feat_b_吃碰數',
+    'feat_c_花色集中度',
+    'feat_d_摸切比例',
+    'feat_e_連續摸切強度',
+    'feat_f_摸切轉手切',
+    'feat_g_中張第一張被打出',
+    'feat_h_中張第二張被打出',
+    'feat_i_中張第三張被打出',
+    'feat_j_中張第四張被打出',
+    'feat_k_字牌第一張被打出',
+    'feat_l_字牌第二張被打出',
+    'feat_m_字牌第三張被打出',
+    'feat_n_字牌第四張被打出',
+    'feat_o_邊張第一張被打出',
+    'feat_p_邊張第二張被打出',
+    'feat_q_邊張第三張被打出',
+    'feat_r_邊張第四張被打出'
 ]
 target_col = 'Target_是否已聽牌'
 
@@ -73,14 +87,13 @@ for rank, (feat, drop) in enumerate(sorted_importance, 1):
     else:
         print(f"{rank}. {feat}: 準確率反升了 {-drop:.4%} (可能是干擾特徵)")
 
-# [更新] 將特徵前面的 feat_x_ 拔掉，讓畫圖顯示乾淨的中文名
 features_for_plot = [re.sub(r'^feat_[a-z]_', '', f) for f in feature_cols]
 drops_percent_for_plot = [importance_results[f] * 100 for f in feature_cols]
 
 features_plot_rev = features_for_plot[::-1]
 drops_plot_rev = drops_percent_for_plot[::-1]
 
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 8))
 colors = ['#4C72B0' if val > 0 else '#C44E52' for val in drops_plot_rev]
 bars = plt.barh(features_plot_rev, drops_plot_rev, color=colors)
 
@@ -107,3 +120,4 @@ for bar in bars:
 plt.tight_layout()
 save_path = "feature_importance_ablation_logistic.png"
 plt.savefig(save_path, dpi=300)
+print(f"\n✅ 圖表已儲存至: {save_path}")
