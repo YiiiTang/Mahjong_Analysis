@@ -1,0 +1,79 @@
+import pandas as pd
+import os
+
+# ==========================================
+# 線性迴歸 (Linear) 設定區
+# ==========================================
+INPUT_EXCEL = "Batch_Linear_Tracking_Result.xlsx"  
+OUTPUT_EXCEL = "Flickering_Cases_Linear.xlsx"
+THRESHOLD = 0.5
+SCORE_COL = '預測聽牌分數'
+# ==========================================
+
+def find_flickering_cases():
+    print(f"📂 [Linear] 正在讀取資料: {INPUT_EXCEL}...")
+    try:
+        df = pd.read_excel(INPUT_EXCEL)
+    except FileNotFoundError:
+        print(f"❌ 找不到檔案 {INPUT_EXCEL}，請確認是否已經產生過追蹤結果。")
+        return
+
+    df = df.sort_values(by=['檔案名稱', '玩家', 'Step_ID']).reset_index(drop=True)
+
+    print("🔍 [Linear] 正在尋找「上一巡判斷聽牌，下一巡判斷未聽牌」的案例...")
+    
+    flickering_results = []
+    grouped = df.groupby(['檔案名稱', '玩家'])
+
+    for (file_name, player), group_df in grouped:
+        group_df = group_df.reset_index(drop=True)
+        
+        group_df['is_predicted_tenpai'] = (group_df[SCORE_COL] >= THRESHOLD).astype(int)
+        group_df['prev_predicted_tenpai'] = group_df['is_predicted_tenpai'].shift(1)
+        
+        flickering_mask = (group_df['prev_predicted_tenpai'] == 1) & (group_df['is_predicted_tenpai'] == 0)
+        flicker_indices = group_df.index[flickering_mask]
+        
+        for idx in flicker_indices:
+            current_row = group_df.iloc[idx]
+            prev_row = group_df.iloc[idx - 1]
+            
+            flickering_results.append({
+                '檔案名稱': file_name,
+                '玩家': player,
+                '發生掉分的 Step_ID': current_row['Step_ID'],
+                '上一巡 (Step_ID)': prev_row['Step_ID'],
+                
+                '上一巡捨牌': f"{prev_row.get('丟棄牌', '')} ({prev_row['動作']})",
+                '當下捨牌': f"{current_row.get('丟棄牌', '')} ({current_row['動作']})",
+                
+                '上一巡預測分數': round(prev_row[SCORE_COL], 4),
+                '當下預測分數': round(current_row[SCORE_COL], 4),
+                '分數跌幅': round(prev_row[SCORE_COL] - current_row[SCORE_COL], 4),
+                
+                '上一巡實際向聽': prev_row['實際向聽數'],
+                '當下實際向聽': current_row['實際向聽數'],
+                
+                '上一巡巡數': prev_row['feat_a_巡數'],
+                '當下巡數': current_row['feat_a_巡數']
+            })
+
+    if not flickering_results:
+        print("✅ [Linear] 沒有找到任何「判斷倒退」的案例。模型表現穩定。")
+        return
+
+    result_df = pd.DataFrame(flickering_results)
+    result_df = result_df.sort_values(by='分數跌幅', ascending=False)
+    result_df.to_excel(OUTPUT_EXCEL, index=False)
+    
+    print(f"⚠️ [Linear] 總共找到 {len(flickering_results)} 筆判斷倒退的案例。")
+    print(f"📁 已儲存詳細結果至: {OUTPUT_EXCEL}\n")
+    
+    print("--- 📉 [Linear] 跌幅最嚴重的 Top 3 案例預覽 ---")
+    for i, row in result_df.head(3).iterrows():
+        print(f"檔案: {row['檔案名稱']} | 玩家: {row['玩家']}")
+        print(f"  捨牌: {row['上一巡捨牌']} -> {row['當下捨牌']}")
+        print(f"  分數: {row['上一巡預測分數']} -> {row['當下預測分數']} (跌幅: {row['分數跌幅']})\n")
+
+if __name__ == "__main__":
+    find_flickering_cases()
