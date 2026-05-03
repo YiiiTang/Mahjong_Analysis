@@ -4,55 +4,131 @@ from pathlib import Path
 from analyze import getRound
 from fileProcess import RoundState, States, playerState
 
-# --- 模型參數 (請依訓練結果填入最新的數值) ---
-INTERCEPT = 0.1865  
-WEIGHTS = {
-    'a': 0.1681, 'b': 0.0745, 'c': 0.0601, 'd': 0.0019,
-    'e': -0.0023, 'f': 0.0046, 'g': 0.0257, 'h': 0.0173,
-    'i': 0.0020, 'j': 0.0029, 'k': -0.0120, 'l': -0.0142,
-    'm': -0.0105, 'n': -0.0087, 'o': 0.0022, 'p': -0.0033,
-    'q': -0.0062, 'r': -0.0020
+# ==========================================
+# AUTO-UPDATE-START
+WEIGHTS_BY_MELD = {
+    0: {
+        'a': 0.0225, 'c': 0.0097, 'd': 0.0129, 'e': 0.0144, 'f': 0.0074,
+        'g': 0.0142, 'h': 0.0039, 'i': 0.0010, 'j': 0.0003,
+        'k': 0.0029, 'l': 0.0003, 'm': -0.0008, 'n': 0.0003,
+        'o': 0.0096, 'p': 0.0044, 'q': 0.0032, 'r': 0.0013
+    },
+    1: {
+        'a': 0.1398, 'c': 0.0302, 'd': 0.0149, 'e': 0.0065, 'f': 0.0023,
+        'g': 0.2031, 'h': 0.1147, 'i': 0.0511, 'j': 0.0133,
+        'k': 0.1350, 'l': 0.1153, 'm': 0.0899, 'n': 0.0510,
+        'o': 0.1902, 'p': 0.1331, 'q': 0.0777, 'r': 0.0339
+    },
+    2: {
+        'a': 0.1723, 'c': 0.0404, 'd': 0.0313, 'e': 0.0006, 'f': -0.0170,
+        'g': 0.1465, 'h': 0.0773, 'i': 0.0376, 'j': 0.0081,
+        'k': 0.0309, 'l': 0.0393, 'm': 0.0352, 'n': 0.0204,
+        'o': 0.0943, 'p': 0.0663, 'q': 0.0372, 'r': 0.0139
+    },
+    3: {
+        'a': 0.1492, 'c': 0.0519, 'd': 0.0348, 'e': -0.0189, 'f': -0.0079,
+        'g': -0.0560, 'h': -0.0527, 'i': -0.0407, 'j': -0.0160,
+        'k': -0.0377, 'l': -0.0567, 'm': -0.0559, 'n': -0.0427,
+        'o': -0.0899, 'p': -0.0826, 'q': -0.0601, 'r': -0.0319
+    },
+    4: {
+        'a': 0.0443, 'c': 0.0554, 'd': 0.0138, 'e': 0.0155, 'f': -0.0080,
+        'g': -0.0345, 'h': -0.0458, 'i': -0.0226, 'j': -0.0137,
+        'k': -0.0146, 'l': -0.0263, 'm': -0.0352, 'n': -0.0198,
+        'o': -0.0379, 'p': -0.0538, 'q': -0.0554, 'r': -0.0175
+    },
+}
+MEANS_BY_MELD = {
+    0: {
+        'a': 4.6082, 'c': 0.5427, 'd': 0.1050, 'e': 0.0037, 'f': 0.0063,
+        'g': 0.1644, 'h': 0.0479, 'i': 0.0101, 'j': 0.0012,
+        'k': 0.2312, 'l': 0.1502, 'm': 0.0663, 'n': 0.0158,
+        'o': 0.2034, 'p': 0.0809, 'q': 0.0242, 'r': 0.0040
+    },
+    1: {
+        'a': 6.2907, 'c': 0.4428, 'd': 0.1884, 'e': 0.0137, 'f': 0.0185,
+        'g': 0.2063, 'h': 0.0608, 'i': 0.0125, 'j': 0.0012,
+        'k': 0.1165, 'l': 0.0949, 'm': 0.0586, 'n': 0.0206,
+        'o': 0.2534, 'p': 0.1265, 'q': 0.0416, 'r': 0.0072
+    },
+    2: {
+        'a': 8.2204, 'c': 0.4313, 'd': 0.2360, 'e': 0.0233, 'f': 0.0257,
+        'g': 0.2688, 'h': 0.1004, 'i': 0.0208, 'j': 0.0022,
+        'k': 0.0416, 'l': 0.0577, 'm': 0.0514, 'n': 0.0252,
+        'o': 0.2216, 'p': 0.1433, 'q': 0.0557, 'r': 0.0111
+    },
+    3: {
+        'a': 9.5429, 'c': 0.4578, 'd': 0.2686, 'e': 0.0327, 'f': 0.0302,
+        'g': 0.2931, 'h': 0.1254, 'i': 0.0312, 'j': 0.0042,
+        'k': 0.0223, 'l': 0.0493, 'm': 0.0517, 'n': 0.0273,
+        'o': 0.1727, 'p': 0.1422, 'q': 0.0652, 'r': 0.0152
+    },
+    4: {
+        'a': 10.6546, 'c': 0.4791, 'd': 0.2865, 'e': 0.0384, 'f': 0.0353,
+        'g': 0.3104, 'h': 0.1358, 'i': 0.0446, 'j': 0.0057,
+        'k': 0.0134, 'l': 0.0504, 'm': 0.0554, 'n': 0.0268,
+        'o': 0.1460, 'p': 0.1338, 'q': 0.0580, 'r': 0.0185
+    },
+}
+SCALES_BY_MELD = {
+    0: {
+        'a': 3.2897, 'c': 0.3765, 'd': 0.1741, 'e': 0.0270, 'f': 0.0303,
+        'g': 0.3706, 'h': 0.2136, 'i': 0.0998, 'j': 0.0353,
+        'k': 0.4216, 'l': 0.3573, 'm': 0.2488, 'n': 0.1249,
+        'o': 0.4025, 'p': 0.2727, 'q': 0.1536, 'r': 0.0633
+    },
+    1: {
+        'a': 3.0097, 'c': 0.3106, 'd': 0.1734, 'e': 0.0504, 'f': 0.0460,
+        'g': 0.4046, 'h': 0.2389, 'i': 0.1111, 'j': 0.0344,
+        'k': 0.3209, 'l': 0.2930, 'm': 0.2348, 'n': 0.1421,
+        'o': 0.4349, 'p': 0.3324, 'q': 0.1997, 'r': 0.0845
+    },
+    2: {
+        'a': 2.8396, 'c': 0.2051, 'd': 0.1617, 'e': 0.0628, 'f': 0.0488,
+        'g': 0.4433, 'h': 0.3005, 'i': 0.1429, 'j': 0.0472,
+        'k': 0.1997, 'l': 0.2331, 'm': 0.2209, 'n': 0.1566,
+        'o': 0.4153, 'p': 0.3504, 'q': 0.2294, 'r': 0.1049
+    },
+    3: {
+        'a': 2.7006, 'c': 0.1532, 'd': 0.1554, 'e': 0.0729, 'f': 0.0491,
+        'g': 0.4552, 'h': 0.3312, 'i': 0.1738, 'j': 0.0647,
+        'k': 0.1477, 'l': 0.2165, 'm': 0.2214, 'n': 0.1629,
+        'o': 0.3780, 'p': 0.3493, 'q': 0.2469, 'r': 0.1225
+    },
+    4: {
+        'a': 2.5660, 'c': 0.1266, 'd': 0.1427, 'e': 0.0731, 'f': 0.0497,
+        'g': 0.4627, 'h': 0.3425, 'i': 0.2065, 'j': 0.0755,
+        'k': 0.1149, 'l': 0.2187, 'm': 0.2289, 'n': 0.1614,
+        'o': 0.3531, 'p': 0.3405, 'q': 0.2337, 'r': 0.1347
+    },
 }
 
-MEANS = {
-    'a': 5.6080, 'b': 0.8770, 'c': 0.5261, 'd': 0.1816,
-    'e': 0.0128, 'f': 0.0165, 'g': 0.1937, 'h': 0.0550,
-    'i': 0.0089, 'j': 0.0010, 'k': 0.1681, 'l': 0.1219,
-    'm': 0.0651, 'n': 0.0236, 'o': 0.2216, 'p': 0.1014,
-    'q': 0.0334, 'r': 0.0062
+INTERCEPTS_BY_MELD = {
+    0: 0.0239,
+    1: 0.1534,
+    2: 0.3666,
+    3: 0.6061,
+    4: 0.8496,
 }
 
-SCALES = {
-    'a': 3.3261, 'b': 0.9675, 'c': 0.3467, 'd': 0.1883,
-    'e': 0.0480, 'f': 0.0433, 'g': 0.3952, 'h': 0.2280,
-    'i': 0.0939, 'j': 0.0321, 'k': 0.3739, 'l': 0.3272,
-    'm': 0.2467, 'n': 0.1518, 'o': 0.4154, 'p': 0.3018,
-    'q': 0.1798, 'r': 0.0785
-}
+# AUTO-UPDATE-END (請勿刪除此行)
+# ==========================================
 
-def calculate_linear_score(features):
-    scaled = {k: (features[k] - MEANS[k]) / SCALES[k] if SCALES[k] != 0 else 0 for k in features}
+def calculate_linear_score(features, current_meld_count):
+    meld = min(current_meld_count, 4)
     
-    score = INTERCEPT \
-        + WEIGHTS['a'] * scaled['a'] \
-        + WEIGHTS['b'] * scaled['b'] \
-        + WEIGHTS['c'] * scaled['c'] \
-        + WEIGHTS['d'] * scaled['d'] \
-        + WEIGHTS['e'] * scaled['e'] \
-        + WEIGHTS['f'] * scaled['f'] \
-        + WEIGHTS['g'] * scaled['g'] \
-        + WEIGHTS['h'] * scaled['h'] \
-        + WEIGHTS['i'] * scaled['i'] \
-        + WEIGHTS['j'] * scaled['j'] \
-        + WEIGHTS['k'] * scaled['k'] \
-        + WEIGHTS['l'] * scaled['l'] \
-        + WEIGHTS['m'] * scaled['m'] \
-        + WEIGHTS['n'] * scaled['n'] \
-        + WEIGHTS['o'] * scaled['o'] \
-        + WEIGHTS['p'] * scaled['p'] \
-        + WEIGHTS['q'] * scaled['q'] \
-        + WEIGHTS['r'] * scaled['r']
+    W = WEIGHTS_BY_MELD[meld]
+    M = MEANS_BY_MELD[meld]
+    S = SCALES_BY_MELD[meld]
+    intercept = INTERCEPTS_BY_MELD[meld]
     
+    keys = ['a', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r']
+    
+    score = intercept
+    for k in keys:
+        scaled_val = (features[k] - M[k]) / S[k] if S[k] != 0 else 0
+        score += W[k] * scaled_val
+        
     return score
 
 def track_game_state_linear(file_path):
@@ -150,7 +226,10 @@ def track_game_state_linear(file_path):
 
                 features = {
                     'a': turn, 
-                    'b': stats['meld_count'], 
+                    'b1': 1 if stats['meld_count'] == 1 else 0, 
+                    'b2': 1 if stats['meld_count'] == 2 else 0, 
+                    'b3': 1 if stats['meld_count'] == 3 else 0, 
+                    'b4': 1 if stats['meld_count'] >= 4 else 0, 
                     'c': feat_c_concentration, 
                     'd': feat_d_moqie_rate, 
                     'e': feat_e_moqie_strength, 
@@ -168,15 +247,23 @@ def track_game_state_linear(file_path):
                     'q': 1 if (is_bian and discard_nth == 3) else 0,
                     'r': 1 if (is_bian and discard_nth == 4) else 0
                 }
-                pred_score = calculate_linear_score(features)
+                
+                pred_score = calculate_linear_score(features, stats['meld_count'])
 
                 actual_shanten = states.get_player(states.state[j], actor_loc).shantenCount
+                action_name = "手切" if action == "HD" else "摸切"
+
+                # 這裡已經移除了終端機的洗版列印
+
                 tracker_log.append({
-                    '檔案名稱': file_name, 'Step_ID': j, '玩家': actor_loc, '動作': "手切" if action == "HD" else "摸切",
+                    '檔案名稱': file_name, 'Step_ID': j, '玩家': actor_loc, '動作': action_name, '丟棄牌': tile_str,
                     '實際向聽數': actual_shanten, '預測聽牌分數': round(pred_score, 4),
                     '特徵值': {
                         'feat_a_巡數': turn, 
-                        'feat_b_吃碰數': stats['meld_count'], 
+                        'feat_b1_一副露': features['b1'], 
+                        'feat_b2_二副露': features['b2'], 
+                        'feat_b3_三副露': features['b3'], 
+                        'feat_b4_四副露': features['b4'], 
                         'feat_c_花色集中度': round(feat_c_concentration, 4),
                         'feat_d_摸切比例': round(feat_d_moqie_rate, 4), 
                         'feat_e_連續摸切強度': round(feat_e_moqie_strength, 4), 
@@ -198,7 +285,7 @@ def track_game_state_linear(file_path):
     return tracker_log
 
 if __name__ == "__main__":
-    folder_path = Path("D:\\Project\\Mahjong\\Board\\TCGA MJ 2025\\3")
+    folder_path = Path("D:\\Project\\Mahjong\\Board\\Test")
 
     files = [f for f in folder_path.iterdir() if f.is_file()]
     
@@ -212,10 +299,10 @@ if __name__ == "__main__":
 
     for file in files:
         try:
-            print(f"處理中: {file.name}")
             game_log = track_game_state_linear(str(file))
             master_log.extend(game_log)
             success_count += 1
+            print(f"✅ 已完成處理: {file.name}") # 只印出完成的檔案名稱
         except Exception as e:
             print(f"❌ 讀取 {file.name} 時發生錯誤: {e}")
             fail_count += 1

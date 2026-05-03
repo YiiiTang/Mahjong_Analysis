@@ -44,7 +44,10 @@ def batch_investigate_games():
 
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3, 'ls': '--'},
-        'feat_b_吃碰數': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b1_一副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b2_二副露': {'color': 'hotpink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b3_三副露': {'color': 'deeppink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b4_四副露': {'color': 'crimson', 'marker': '*', 'lw': 1.5, 'ls': '-'},
         'feat_c_花色集中度': {'color': 'tab:orange', 'marker': 's', 'lw': 1.5, 'ls': '-'},
         'feat_d_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 1.5, 'ls': '-'},
         'feat_e_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 1.5, 'ls': '-'},
@@ -113,10 +116,10 @@ def batch_investigate_games():
             ax.set_ylabel('特徵值 / 預測分數', fontsize=12)
             
             ax.set_xticks(df_player[turn_col].astype(int))
-            
-            ax.legend(loc='center left', bbox_to_anchor=(1.10, 0.5), fontsize=9)
+
+            ax.legend(loc='center left', bbox_to_anchor=(1.10, 0.5), fontsize=9, ncol=2)
             ax.grid(True, linestyle='--', alpha=0.6)
-            plt.tight_layout(rect=[0, 0, 0.82, 1])
+            plt.tight_layout(rect=[0, 0, 0.78, 1]) 
 
             win_suffix = "_WIN" if is_winner else ""
             safe_name = target_game.replace(".txt", "")

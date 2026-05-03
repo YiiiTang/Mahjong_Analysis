@@ -29,7 +29,7 @@ def save_file(results):
 
 if __name__ == "__main__":
     results = []
-    folder_path = "D:\\Project\\Mahjong\\Board\\TAAI_MJ_2025\\3"
+    folder_path = "D:\\Project\\Mahjong\\Board\\Train"
 
     for file in list_files(folder_path):
         print(f"Processing: {file.name}")
@@ -181,7 +181,10 @@ if __name__ == "__main__":
 
                         '累積丟牌數': td,
                         'feat_a_巡數': turn,
-                        'feat_b_吃碰數': stats['meld_count'],
+                        'feat_b1_一副露': 1 if stats['meld_count'] == 1 else 0,
+                        'feat_b2_二副露': 1 if stats['meld_count'] == 2 else 0,
+                        'feat_b3_三副露': 1 if stats['meld_count'] == 3 else 0,
+                        'feat_b4_四副露': 1 if stats['meld_count'] >= 4 else 0,
 
                         'feat_c_花色集中度': feat_val_concentration,
                         'feat_d_摸切比例': feat_val_moqie_rate,

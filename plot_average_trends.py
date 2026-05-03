@@ -22,6 +22,7 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     df_valid = df[df[turn_col].isin(valid_turns)]
 
     features_to_calc = [
+        'feat_b1_一副露', 'feat_b2_二副露', 'feat_b3_三副露', 'feat_b4_四副露',
         'feat_c_花色集中度', 'feat_d_摸切比例', 'feat_e_連續摸切強度', 'feat_f_摸切轉手切',
         'feat_g_中張第一張被打出', 'feat_h_中張第二張被打出', 'feat_i_中張第三張被打出', 'feat_j_中張第四張被打出',
         'feat_k_字牌第一張被打出', 'feat_l_字牌第二張被打出', 'feat_m_字牌第三張被打出', 'feat_n_字牌第四張被打出',
@@ -37,6 +38,10 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3.5, 'ls': '--'},
+        'feat_b1_一副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b2_二副露': {'color': 'hotpink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b3_三副露': {'color': 'deeppink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b4_四副露': {'color': 'crimson', 'marker': '*', 'lw': 1.5, 'ls': '-'},
         'feat_c_花色集中度': {'color': 'tab:orange', 'marker': 's', 'lw': 2, 'ls': '-'},
         'feat_d_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 2, 'ls': '-'},
         'feat_e_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 2, 'ls': '-'},
@@ -78,7 +83,7 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     print(f"✅ 已儲存綜合比較圖: {save_path_all}")
     plt.close()
 
-    fig, axes = plt.subplots(nrows=6, ncols=3, figsize=(18, 22), sharex=True)
+    fig, axes = plt.subplots(nrows=7, ncols=3, figsize=(18, 25), sharex=True)
     fig.suptitle('所有牌譜平均：各特徵變化趨勢與變異程度 (含標準差陰影)', fontsize=18, fontweight='bold')
     axes = axes.flatten()
 
@@ -107,7 +112,7 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
         for j in range(len(features_list), len(axes)):
             axes[j].set_visible(False)
 
-    for j in range(15, min(18, len(axes))):
+    for j in range(len(axes) - 3, len(axes)):
         axes[j].set_xlabel('當下巡數', fontsize=12)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
