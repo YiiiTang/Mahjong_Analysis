@@ -1,8 +1,9 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
+from sklearn.inspection import permutation_importance
 import matplotlib.font_manager as fm
 import re
 import os
@@ -24,27 +25,23 @@ df_train['meld_count'] = df_train.apply(get_meld_count, axis=1)
 df_test['meld_count'] = df_test.apply(get_meld_count, axis=1)
 
 feature_cols = [
-    'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_摸切比例', 'feat_e_連續摸切強度', 'feat_f_摸切轉手切',
+    'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_摸切比例', 'feat_e_連續摸切強度', 'feat_f_摸切轉手切', 
     'feat_g_中張第一張被打出', 'feat_h_中張第二張被打出', 'feat_i_中張第三張被打出', 'feat_j_中張第四張被打出',
     'feat_k_字牌第一張被打出', 'feat_l_字牌第二張被打出', 'feat_m_字牌第三張被打出', 'feat_n_字牌第四張被打出',
     'feat_o_邊張第一張被打出', 'feat_p_邊張第二張被打出', 'feat_q_邊張第三張被打出', 'feat_r_邊張第四張被打出'
 ]
 target_col = 'Target_是否已聽牌'
 
-def get_accuracy(model, X, Y):
-    Y_pred = model.predict(X)
-    return accuracy_score(Y, Y_pred)
-
 for meld in range(5):
     print(f"\n" + "="*50)
-    print(f"正在執行 {meld} 副露的消融實驗 (Logistic)")
+    print(f"正在執行 {meld} 副露的排列特徵重要性實驗 (Logistic)")
     print("="*50)
 
     subset_train = df_train[df_train['meld_count'] == meld]
     subset_test = df_test[df_test['meld_count'] == meld]
     
     if len(subset_train) < 10 or len(subset_test) < 5:
-        print(f"警告: {meld} 副露的資料量太少 (Train: {len(subset_train)}, Test: {len(subset_test)})，跳過此組。\n")
+        print(f"警告: {meld} 副露的資料量太少，跳過此組。\n")
         continue
 
     X_train_full = subset_train[feature_cols]
@@ -58,27 +55,17 @@ for meld in range(5):
 
     base_model = LogisticRegression(max_iter=1000)
     base_model.fit(X_train_full_scaled, Y_train)
-    base_acc = get_accuracy(base_model, X_test_full_scaled, Y_test)
-    print(f"[{meld} 副露 基準模型] 測試集準確率 (全特徵): {base_acc:.4%}\n")
 
-    importance_results = {}
+    result = permutation_importance(
+        base_model, X_test_full_scaled, Y_test, 
+        scoring='roc_auc', 
+        n_repeats=10, random_state=42
+    )
 
-    for feature in feature_cols:
-        X_train_ablated = X_train_full.drop(columns=[feature])
-        X_test_ablated = X_test_full.drop(columns=[feature])
-        
-        scaler_ablated = StandardScaler()
-        X_train_ablated_scaled = scaler_ablated.fit_transform(X_train_ablated)
-        X_test_ablated_scaled = scaler_ablated.transform(X_test_ablated)
-        
-        ablated_model = LogisticRegression(max_iter=1000)
-        ablated_model.fit(X_train_ablated_scaled, Y_train)
-        
-        ablated_acc = get_accuracy(ablated_model, X_test_ablated_scaled, Y_test)
-        acc_drop = base_acc - ablated_acc
-        importance_results[feature] = acc_drop
+    importance_results = {feature_cols[i]: result.importances_mean[i] for i in range(len(feature_cols))}
 
     features_for_plot = [re.sub(r'^feat_[a-z]_', '', f) for f in feature_cols]
+    # 轉換為百分比表示 ROC-AUC 的下降幅度
     drops_percent_for_plot = [importance_results[f] * 100 for f in feature_cols]
 
     features_plot_rev = features_for_plot[::-1]
@@ -88,8 +75,8 @@ for meld in range(5):
     colors = ['#4C72B0' if val > 0 else '#C44E52' for val in drops_plot_rev]
     bars = plt.barh(features_plot_rev, drops_plot_rev, color=colors)
 
-    plt.xlabel('準確率下降幅度 (%)', fontsize=12)
-    plt.title(f'[{meld} 副露] 移除單一特徵對預測聽牌準確率的影響 (Logistic)', fontsize=14, fontweight='bold')
+    plt.xlabel('ROC-AUC 下降幅度 (%)', fontsize=12)
+    plt.title(f'[{meld} 副露] 打亂特徵對預測聽牌能力的影響 (Logistic)', fontsize=14, fontweight='bold')
     plt.axvline(0, color='black', linewidth=1.2, linestyle='--') 
 
     max_positive = max([val for val in drops_percent_for_plot if val > 0] + [0.1]) 
@@ -102,7 +89,6 @@ for meld in range(5):
     for bar in bars:
         width = bar.get_width()
         offset = max_positive * 0.03 + 0.1
-        
         if width > 0:
             plt.text(width + offset, bar.get_y() + bar.get_height()/2, 
                      f'{width:.2f}%', va='center', ha='left', fontsize=10)
@@ -111,7 +97,7 @@ for meld in range(5):
                      f'{width:.2f}%', va='center', ha='right', fontsize=10)
 
     plt.tight_layout()
-    save_path = f"feature_importance_ablation_logistic_meld_{meld}.png"
+    save_path = f"feature_importance_permutation_logistic_meld_{meld}.png"
     plt.savefig(save_path, dpi=300)
     plt.close()
     print(f"✅ 圖表已儲存至: {save_path}")
