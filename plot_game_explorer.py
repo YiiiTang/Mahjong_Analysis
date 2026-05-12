@@ -44,26 +44,30 @@ def batch_investigate_games():
 
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3, 'ls': '--'},
-        'feat_b1_一副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        'feat_b2_二副露': {'color': 'hotpink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        'feat_b3_三副露': {'color': 'deeppink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        'feat_b4_四副露': {'color': 'crimson', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b_吃碰數': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
         'feat_c_花色集中度': {'color': 'tab:orange', 'marker': 's', 'lw': 1.5, 'ls': '-'},
-        'feat_d_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 1.5, 'ls': '-'},
-        'feat_e_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 1.5, 'ls': '-'},
-        'feat_f_摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 1.5, 'ls': '-'},
-        'feat_g_中張第一張被打出': {'color': 'tab:blue', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        'feat_h_中張第二張被打出': {'color': 'tab:blue', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        'feat_i_中張第三張被打出': {'color': 'tab:blue', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        'feat_j_中張第四張被打出': {'color': 'tab:blue', 'marker': '4', 'lw': 1.5, 'ls': '-'},
-        'feat_k_字牌第一張被打出': {'color': 'tab:green', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        'feat_l_字牌第二張被打出': {'color': 'tab:green', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        'feat_m_字牌第三張被打出': {'color': 'tab:green', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        'feat_n_字牌第四張被打出': {'color': 'tab:green', 'marker': '4', 'lw': 1.5, 'ls': '-'},
-        'feat_o_邊張第一張被打出': {'color': 'darkcyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        'feat_p_邊張第二張被打出': {'color': 'darkcyan', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        'feat_q_邊張第三張被打出': {'color': 'darkcyan', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        'feat_r_邊張第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'}
+        'feat_d_中張比例(3 ~ 7)': {'color': 'gold', 'marker': 'o', 'lw': 1.5, 'ls': '-'},
+        'feat_e_邊張比例(1、2、8、9)': {'color': 'darkkhaki', 'marker': 'o', 'lw': 1.5, 'ls': '-'},
+        'feat_f_字牌比例': {'color': 'olive', 'marker': 'o', 'lw': 1.5, 'ls': '-'},
+        'feat_g_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 1.5, 'ls': '-'},
+        'feat_h_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 1.5, 'ls': '-'},
+        'feat_i_摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 1.5, 'ls': '-'},
+        'feat_j_中張第一張被打出': {'color': 'tab:blue', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_k_中張第二張被打出': {'color': 'tab:blue', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_l_中張第三張被打出': {'color': 'tab:blue', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_m_中張第四張被打出': {'color': 'tab:blue', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_n_字牌第一張被打出': {'color': 'tab:green', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_o_字牌第二張被打出': {'color': 'tab:green', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_p_字牌第三張被打出': {'color': 'tab:green', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_q_字牌第四張被打出': {'color': 'tab:green', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_r_邊張(1、9)第一張被打出': {'color': 'darkcyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_s_邊張(1、9)第二張被打出': {'color': 'darkcyan', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_t_邊張(1、9)第三張被打出': {'color': 'darkcyan', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_u_邊張(1、9)第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_v_邊張(2、8)第一張被打出': {'color': 'teal', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_w_邊張(2、8)第二張被打出': {'color': 'teal', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_x_邊張(2、8)第三張被打出': {'color': 'teal', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_y_邊張(2、8)第四張被打出': {'color': 'teal', 'marker': '4', 'lw': 1.5, 'ls': '-'}
     }
 
     players = ['E', 'S', 'W', 'N']
@@ -89,7 +93,7 @@ def batch_investigate_games():
             if df_player.empty: 
                 continue
 
-            plt.figure(figsize=(14, 7))
+            plt.figure(figsize=(15, 8))
             ax = plt.gca()
             
             for feature, style in plot_styles.items():

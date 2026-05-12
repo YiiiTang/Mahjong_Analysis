@@ -55,7 +55,10 @@ def find_flickering_cases():
                 '當下實際向聽': current_row['實際向聽數'],
                 
                 '上一巡巡數': prev_row['feat_a_巡數'],
-                '當下巡數': current_row['feat_a_巡數']
+                '當下巡數': current_row['feat_a_巡數'],
+
+                '上一巡吃碰數': prev_row['feat_b_吃碰數'],
+                '當下吃碰數': current_row['feat_b_吃碰數']
             })
 
     if not flickering_results:

@@ -37,7 +37,7 @@ def find_common_flickering():
     common_df = pd.merge(
         df_linear, 
         df_logistic, 
-        on=['檔案名稱', '玩家', 'Target_Step_ID', 'Prev_Step_ID', '上一巡捨牌', '當下捨牌', '上一巡實際向聽', '當下實際向聽', '上一巡巡數', '當下巡數'],
+        on=['檔案名稱', '玩家', 'Target_Step_ID', 'Prev_Step_ID', '上一巡捨牌', '當下捨牌', '上一巡實際向聽', '當下實際向聽', '上一巡巡數', '當下巡數', '上一巡吃碰數', '當下吃碰數'],
         suffixes=('_Linear', '_Logistic') 
     )
 
@@ -55,7 +55,8 @@ def find_common_flickering():
         '分數跌幅', '機率跌幅', '綜合跌幅',
         '上一巡預測分數', '當下預測分數', 
         '上一巡預測機率', '當下預測機率',
-        '上一巡巡數', '當下巡數'
+        '上一巡巡數', '當下巡數',
+        '上一巡吃碰數', '當下吃碰數'
     ]
 
     common_df = common_df[[col for col in cols_order if col in common_df.columns]]

@@ -22,11 +22,13 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     df_valid = df[df[turn_col].isin(valid_turns)]
 
     features_to_calc = [
-        'feat_b1_一副露', 'feat_b2_二副露', 'feat_b3_三副露', 'feat_b4_四副露',
-        'feat_c_花色集中度', 'feat_d_摸切比例', 'feat_e_連續摸切強度', 'feat_f_摸切轉手切',
-        'feat_g_中張第一張被打出', 'feat_h_中張第二張被打出', 'feat_i_中張第三張被打出', 'feat_j_中張第四張被打出',
-        'feat_k_字牌第一張被打出', 'feat_l_字牌第二張被打出', 'feat_m_字牌第三張被打出', 'feat_n_字牌第四張被打出',
-        'feat_o_邊張第一張被打出', 'feat_p_邊張第二張被打出', 'feat_q_邊張第三張被打出', 'feat_r_邊張第四張被打出',
+        'feat_b_吃碰數',
+        'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 'feat_e_邊張比例(1、2、8、9)', 'feat_f_字牌比例',
+        'feat_g_摸切比例', 'feat_h_連續摸切強度', 'feat_i_摸切轉手切',
+        'feat_j_中張第一張被打出', 'feat_k_中張第二張被打出', 'feat_l_中張第三張被打出', 'feat_m_中張第四張被打出',
+        'feat_n_字牌第一張被打出', 'feat_o_字牌第二張被打出', 'feat_p_字牌第三張被打出', 'feat_q_字牌第四張被打出',
+        'feat_r_邊張(1、9)第一張被打出', 'feat_s_邊張(1、9)第二張被打出', 'feat_t_邊張(1、9)第三張被打出', 'feat_u_邊張(1、9)第四張被打出',
+        'feat_v_邊張(2、8)第一張被打出', 'feat_w_邊張(2、8)第二張被打出', 'feat_x_邊張(2、8)第三張被打出', 'feat_y_邊張(2、8)第四張被打出',
         '預測聽牌分數'
     ]
 
@@ -34,30 +36,34 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     
     df_grouped = df_valid.groupby(turn_col)[features_to_calc].agg(['mean', 'std'])
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=(16, 12))
     
     plot_styles = {
         '預測聽牌分數': {'color': 'black', 'marker': 'x', 'lw': 3.5, 'ls': '--'},
-        'feat_b1_一副露': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        'feat_b2_二副露': {'color': 'hotpink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        'feat_b3_三副露': {'color': 'deeppink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
-        'feat_b4_四副露': {'color': 'crimson', 'marker': '*', 'lw': 1.5, 'ls': '-'},
+        'feat_b_吃碰數': {'color': 'tab:pink', 'marker': '*', 'lw': 1.5, 'ls': '-'},
         'feat_c_花色集中度': {'color': 'tab:orange', 'marker': 's', 'lw': 2, 'ls': '-'},
-        'feat_d_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 2, 'ls': '-'},
-        'feat_e_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 2, 'ls': '-'},
-        'feat_f_摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 2, 'ls': '-'},
-        'feat_g_中張第一張被打出': {'color': 'tab:blue', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        'feat_h_中張第二張被打出': {'color': 'tab:blue', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        'feat_i_中張第三張被打出': {'color': 'tab:blue', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        'feat_j_中張第四張被打出': {'color': 'tab:blue', 'marker': '4', 'lw': 1.5, 'ls': '-'},
-        'feat_k_字牌第一張被打出': {'color': 'tab:green', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        'feat_l_字牌第二張被打出': {'color': 'tab:green', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        'feat_m_字牌第三張被打出': {'color': 'tab:green', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        'feat_n_字牌第四張被打出': {'color': 'tab:green', 'marker': '4', 'lw': 1.5, 'ls': '-'},
-        'feat_o_邊張第一張被打出': {'color': 'darkcyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
-        'feat_p_邊張第二張被打出': {'color': 'darkcyan', 'marker': '2', 'lw': 1.5, 'ls': '-'},
-        'feat_q_邊張第三張被打出': {'color': 'darkcyan', 'marker': '3', 'lw': 1.5, 'ls': '-'},
-        'feat_r_邊張第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'}
+        'feat_d_中張比例(3 ~ 7)': {'color': 'gold', 'marker': 'o', 'lw': 2, 'ls': '-'},
+        'feat_e_邊張比例(1、2、8、9)': {'color': 'darkkhaki', 'marker': 'o', 'lw': 2, 'ls': '-'},
+        'feat_f_字牌比例': {'color': 'olive', 'marker': 'o', 'lw': 2, 'ls': '-'},
+        'feat_g_摸切比例': {'color': 'tab:red', 'marker': 'D', 'lw': 2, 'ls': '-'},
+        'feat_h_連續摸切強度': {'color': 'tab:purple', 'marker': 'v', 'lw': 2, 'ls': '-'},
+        'feat_i_摸切轉手切': {'color': 'tab:brown', 'marker': 'p', 'lw': 2, 'ls': '-'},
+        'feat_j_中張第一張被打出': {'color': 'tab:blue', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_k_中張第二張被打出': {'color': 'tab:blue', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_l_中張第三張被打出': {'color': 'tab:blue', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_m_中張第四張被打出': {'color': 'tab:blue', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_n_字牌第一張被打出': {'color': 'tab:green', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_o_字牌第二張被打出': {'color': 'tab:green', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_p_字牌第三張被打出': {'color': 'tab:green', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_q_字牌第四張被打出': {'color': 'tab:green', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_r_邊張(1、9)第一張被打出': {'color': 'darkcyan', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_s_邊張(1、9)第二張被打出': {'color': 'darkcyan', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_t_邊張(1、9)第三張被打出': {'color': 'darkcyan', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_u_邊張(1、9)第四張被打出': {'color': 'darkcyan', 'marker': '4', 'lw': 1.5, 'ls': '-'},
+        'feat_v_邊張(2、8)第一張被打出': {'color': 'teal', 'marker': '1', 'lw': 1.5, 'ls': '-'},
+        'feat_w_邊張(2、8)第二張被打出': {'color': 'teal', 'marker': '2', 'lw': 1.5, 'ls': '-'},
+        'feat_x_邊張(2、8)第三張被打出': {'color': 'teal', 'marker': '3', 'lw': 1.5, 'ls': '-'},
+        'feat_y_邊張(2、8)第四張被打出': {'color': 'teal', 'marker': '4', 'lw': 1.5, 'ls': '-'}
     }
 
     for feature, style in plot_styles.items():
@@ -83,7 +89,7 @@ def plot_multigame_averages(excel_file, output_dir="Plot_Results"):
     print(f"✅ 已儲存綜合比較圖: {save_path_all}")
     plt.close()
 
-    fig, axes = plt.subplots(nrows=7, ncols=3, figsize=(18, 25), sharex=True)
+    fig, axes = plt.subplots(nrows=9, ncols=3, figsize=(18, 30), sharex=True)
     fig.suptitle('所有牌譜平均：各特徵變化趨勢與變異程度 (含標準差陰影)', fontsize=18, fontweight='bold')
     axes = axes.flatten()
 

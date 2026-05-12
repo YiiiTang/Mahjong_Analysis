@@ -18,90 +18,79 @@ if not os.path.exists(DATA_PATH):
 df = pd.read_excel(DATA_PATH)
 df = df.fillna(0)
 
-def get_meld_count(row):
-    if row['feat_b4_四副露'] == 1: return 4
-    if row['feat_b3_三副露'] == 1: return 3
-    if row['feat_b2_二副露'] == 1: return 2
-    if row['feat_b1_一副露'] == 1: return 1
-    return 0
-
-df['meld_count'] = df.apply(get_meld_count, axis=1)
+df['meld_count'] = df['feat_b_吃碰數']
+df['phase'] = df['feat_a_巡數'].apply(lambda x: 'early' if x <= 8 else 'late')
 
 feature_cols = [
-    'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_摸切比例', 'feat_e_連續摸切強度', 'feat_f_摸切轉手切',
-    'feat_g_中張第一張被打出', 'feat_h_中張第二張被打出', 'feat_i_中張第三張被打出', 'feat_j_中張第四張被打出',
-    'feat_k_字牌第一張被打出', 'feat_l_字牌第二張被打出', 'feat_m_字牌第三張被打出', 'feat_n_字牌第四張被打出',
-    'feat_o_邊張第一張被打出', 'feat_p_邊張第二張被打出', 'feat_q_邊張第三張被打出', 'feat_r_邊張第四張被打出'
+    'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 'feat_e_邊張比例(1、2、8、9)',
+    'feat_f_字牌比例', 'feat_g_摸切比例', 'feat_h_連續摸切強度', 'feat_i_摸切轉手切',
+    'feat_j_中張第一張被打出', 'feat_k_中張第二張被打出', 'feat_l_中張第三張被打出', 'feat_m_中張第四張被打出',
+    'feat_n_字牌第一張被打出', 'feat_o_字牌第二張被打出', 'feat_p_字牌第三張被打出', 'feat_q_字牌第四張被打出',
+    'feat_r_邊張(1、9)第一張被打出', 'feat_s_邊張(1、9)第二張被打出', 'feat_t_邊張(1、9)第三張被打出', 'feat_u_邊張(1、9)第四張被打出',
+    'feat_v_邊張(2、8)第一張被打出', 'feat_w_邊張(2、8)第二張被打出', 'feat_x_邊張(2、8)第三張被打出', 'feat_y_邊張(2、8)第四張被打出'
 ]
 
-all_weights = {}
-all_means = {}
-all_scales = {}
-all_intercepts = {}
-keys = ['a', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r']
+keys = ['a', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y']
+
+all_weights = {i: {} for i in range(5)}
+all_means = {i: {} for i in range(5)}
+all_scales = {i: {} for i in range(5)}
+all_intercepts = {i: {} for i in range(5)}
 
 for i in range(5):
-    print(f"========== 訓練 {i} 副露的模型 (Logistic) ==========")
-    subset_df = df[df['meld_count'] == i]
-    
-    if len(subset_df) < 10:
-        print(f"警告: {i} 副露的資料量太少 ({len(subset_df)} 筆)，跳過訓練。\n")
-        all_weights[i] = {k: 0.0 for k in keys}
-        all_means[i] = {k: 0.0 for k in keys}
-        all_scales[i] = {k: 1.0 for k in keys}
-        all_intercepts[i] = 0.0
-        continue
+    for phase in ['early', 'late']:
+        print(f"========== 訓練 {i} 副露 | {phase.upper()} 階段 (Logistic) ==========")
+        subset_df = df[(df['meld_count'] == i) & (df['phase'] == phase)]
         
-    X = subset_df[feature_cols]
-    Y = subset_df['Target_是否已聽牌']
+        if len(subset_df) < 10:
+            print(f"警告: {i} 副露 ({phase}) 的資料量太少 ({len(subset_df)} 筆)，跳過訓練，補 0。\n")
+            all_weights[i][phase] = {k: 0.0 for k in keys}
+            all_means[i][phase] = {k: 0.0 for k in keys}
+            all_scales[i][phase] = {k: 1.0 for k in keys}
+            all_intercepts[i][phase] = 0.0
+            continue
+            
+        X = subset_df[feature_cols]
+        Y = subset_df['Target_是否已聽牌']
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-    
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    
-    model = LogisticRegression(max_iter=1000)
-    model.fit(X_train_scaled, Y_train)
-    
-    Y_pred = model.predict(X_test_scaled)
-    w = model.coef_[0]
-    
-    print(f"資料筆數: {len(subset_df)} 筆")
-    print(f"Accuracy: {accuracy_score(Y_test, Y_pred):.4f}\n")
-    
-    print(f"截距 (w0): {model.intercept_[0]:.4f}")
-    print(f"巡數(a) 的權重: {w[0]:.4f}")
-    print(f"花色集中度(c) 的權重: {w[1]:.4f}")
-    print(f"摸切比例(d) 的權重: {w[2]:.4f}")
-    print(f"連續摸切強度(e) 的權重: {w[3]:.4f}")
-    print(f"摸切轉手切(f) 的權重: {w[4]:.4f}")
-    print(f"中張第一張被打出(g) 的權重: {w[5]:.4f}")
-    print(f"中張第二張被打出(h) 的權重: {w[6]:.4f}")
-    print(f"中張第三張被打出(i) 的權重: {w[7]:.4f}")
-    print(f"中張第四張被打出(j) 的權重: {w[8]:.4f}")
-    print(f"字牌第一張被打出(k) 的權重: {w[9]:.4f}")
-    print(f"字牌第二張被打出(l) 的權重: {w[10]:.4f}")
-    print(f"字牌第三張被打出(m) 的權重: {w[11]:.4f}")
-    print(f"字牌第四張被打出(n) 的權重: {w[12]:.4f}")
-    print(f"邊張第一張被打出(o) 的權重: {w[13]:.4f}")
-    print(f"邊張第二張被打出(p) 的權重: {w[14]:.4f}")
-    print(f"邊張第三張被打出(q) 的權重: {w[15]:.4f}")
-    print(f"邊張第四張被打出(r) 的權重: {w[16]:.4f}\n")
-    
-    all_weights[i] = {k: w[idx] for idx, k in enumerate(keys)}
-    all_means[i] = {k: scaler.mean_[idx] for idx, k in enumerate(keys)}
-    all_scales[i] = {k: scaler.scale_[idx] for idx, k in enumerate(keys)}
-    all_intercepts[i] = model.intercept_[0]
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+        
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X_train_scaled, Y_train)
+        
+        Y_pred = model.predict(X_test_scaled)
+        w = model.coef_[0]
+        
+        print(f"資料筆數: {len(subset_df)} 筆")
+        print(f"Accuracy: {accuracy_score(Y_test, Y_pred):.4f}\n")
+        
+        print(f"截距 (w0): {model.intercept_[0]:.4f}")
+        for idx, col in enumerate(feature_cols):
+            print(f"{col} 的權重: {w[idx]:.4f}")
+        print("\n")
+        
+        all_weights[i][phase] = {k: w[idx] for idx, k in enumerate(keys)}
+        all_means[i][phase] = {k: scaler.mean_[idx] for idx, k in enumerate(keys)}
+        all_scales[i][phase] = {k: scaler.scale_[idx] for idx, k in enumerate(keys)}
+        all_intercepts[i][phase] = model.intercept_[0]
 
 def dict_to_string(name, d):
     s = f"{name} = {{\n"
-    for meld, features in d.items():
+    for meld in range(5):
         s += f"    {meld}: {{\n"
-        s += f"        'a': {features['a']:.4f}, 'c': {features['c']:.4f}, 'd': {features['d']:.4f}, 'e': {features['e']:.4f}, 'f': {features['f']:.4f},\n"
-        s += f"        'g': {features['g']:.4f}, 'h': {features['h']:.4f}, 'i': {features['i']:.4f}, 'j': {features['j']:.4f},\n"
-        s += f"        'k': {features['k']:.4f}, 'l': {features['l']:.4f}, 'm': {features['m']:.4f}, 'n': {features['n']:.4f},\n"
-        s += f"        'o': {features['o']:.4f}, 'p': {features['p']:.4f}, 'q': {features['q']:.4f}, 'r': {features['r']:.4f}\n"
+        for phase in ['early', 'late']:
+            features = d[meld][phase]
+            s += f"        '{phase}': {{\n"
+            s += f"            'a': {features['a']:.4f}, 'c': {features['c']:.4f}, 'd': {features['d']:.4f}, 'e': {features['e']:.4f}, 'f': {features['f']:.4f},\n"
+            s += f"            'g': {features['g']:.4f}, 'h': {features['h']:.4f}, 'i': {features['i']:.4f}, 'j': {features['j']:.4f}, 'k': {features['k']:.4f},\n"
+            s += f"            'l': {features['l']:.4f}, 'm': {features['m']:.4f}, 'n': {features['n']:.4f}, 'o': {features['o']:.4f}, 'p': {features['p']:.4f},\n"
+            s += f"            'q': {features['q']:.4f}, 'r': {features['r']:.4f}, 's': {features['s']:.4f}, 't': {features['t']:.4f}, 'u': {features['u']:.4f},\n"
+            s += f"            'v': {features['v']:.4f}, 'w': {features['w']:.4f}, 'x': {features['x']:.4f}, 'y': {features['y']:.4f}\n"
+            s += "        },\n"
         s += "    },\n"
     s += "}\n"
     return s
@@ -110,9 +99,13 @@ new_params_code = ""
 new_params_code += dict_to_string("WEIGHTS_BY_MELD", all_weights)
 new_params_code += dict_to_string("MEANS_BY_MELD", all_means)
 new_params_code += dict_to_string("SCALES_BY_MELD", all_scales)
+
 new_params_code += "\nINTERCEPTS_BY_MELD = {\n"
-for k, v in all_intercepts.items():
-    new_params_code += f"    {k}: {v:.4f},\n"
+for meld in range(5):
+    new_params_code += f"    {meld}: {{\n"
+    new_params_code += f"        'early': {all_intercepts[meld]['early']:.4f},\n"
+    new_params_code += f"        'late': {all_intercepts[meld]['late']:.4f}\n"
+    new_params_code += "    },\n"
 new_params_code += "}\n"
 
 def update_tracking_script(target_file, new_code):
@@ -122,7 +115,7 @@ def update_tracking_script(target_file, new_code):
 
         pattern = re.compile(r'(# AUTO-UPDATE-START.*?)(.*?)(\n# AUTO-UPDATE-END)', re.DOTALL)
         if not pattern.search(content):
-            print(f"❌ 錯誤：在 {target_file} 中找不到 AUTO-UPDATE-START 或 AUTO-UPDATE-END 標籤，無法自動更新。")
+            print(f"❌ 錯誤：找不到 AUTO-UPDATE-START 標籤。")
             return
 
         new_content = pattern.sub(r'\1\n' + new_code + r'\3', content)
@@ -130,8 +123,8 @@ def update_tracking_script(target_file, new_code):
         with open(target_file, 'w', encoding='utf-8') as f:
             f.write(new_content)
             
-        print(f"✅ 成功跨資料夾更新參數至：\n   {target_file}")
+        print(f"✅ 成功更新參數至：{target_file}")
     except FileNotFoundError:
-        print(f"❌ 找不到目標檔案 {target_file}，請確認 trace 腳本的路徑是否正確。")
+        print(f"❌ 找不到目標檔案 {target_file}")
 
 update_tracking_script(TARGET_SCRIPT, new_params_code)
