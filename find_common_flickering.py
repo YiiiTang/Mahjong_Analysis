@@ -7,6 +7,21 @@ import os
 LINEAR_EXCEL = "Flickering_Cases_Linear.xlsx"
 LOGISTIC_EXCEL = "Flickering_Cases_Logistic.xlsx"
 OUTPUT_EXCEL = "Common_Flickering_Cases.xlsx"
+
+# 特徵欄位清單
+feature_cols = [
+    'feat_a_巡數', 'feat_b_吃碰數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 
+    'feat_e_邊張比例(1、2、8、9)', 'feat_f_字牌比例', 'feat_g_摸切比例', 
+    'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
+    'feat_z1_第9巡起最近連續摸切次數', 'feat_z2_第9巡起前兩巡連續摸切',
+    'feat_k_中張第一張被打出', 'feat_l_中張第二張被打出', 'feat_m_中張第三張被打出', 
+    'feat_n_中張第四張被打出', 'feat_o_字牌第一張被打出', 'feat_p_字牌第二張被打出', 
+    'feat_q_字牌第三張被打出', 'feat_r_字牌第四張被打出', 'feat_s_邊張(1、9)第一張被打出', 
+    'feat_t_邊張(1、9)第二張被打出', 'feat_u_邊張(1、9)第三張被打出', 
+    'feat_v_邊張(1、9)第四張被打出', 'feat_w_邊張(2、8)第一張被打出', 
+    'feat_x_邊張(2、8)第二張被打出', 'feat_y_邊張(2、8)第三張被打出', 
+    'feat_z_邊張(2、8)第四張被打出'
+]
 # ==========================================
 
 def find_common_flickering():
@@ -34,10 +49,17 @@ def find_common_flickering():
 
     print("🔍 正在尋找兩個模型「共同發生判斷倒退」的交集案例...")
 
+    merge_on_cols = [
+        '檔案名稱', '玩家', 'Target_Step_ID', 'Prev_Step_ID', 
+        '上一巡捨牌', '當下捨牌', '上一巡實際向聽', '當下實際向聽'
+    ]
+    for feat in feature_cols:
+        merge_on_cols.extend([f'上一巡_{feat}', f'當下_{feat}'])
+
     common_df = pd.merge(
         df_linear, 
         df_logistic, 
-        on=['檔案名稱', '玩家', 'Target_Step_ID', 'Prev_Step_ID', '上一巡捨牌', '當下捨牌', '上一巡實際向聽', '當下實際向聽', '上一巡巡數', '當下巡數', '上一巡吃碰數', '當下吃碰數'],
+        on=merge_on_cols,
         suffixes=('_Linear', '_Logistic') 
     )
 
@@ -54,10 +76,11 @@ def find_common_flickering():
         '上一巡實際向聽', '當下實際向聽',
         '分數跌幅', '機率跌幅', '綜合跌幅',
         '上一巡預測分數', '當下預測分數', 
-        '上一巡預測機率', '當下預測機率',
-        '上一巡巡數', '當下巡數',
-        '上一巡吃碰數', '當下吃碰數'
+        '上一巡預測機率', '當下預測機率'
     ]
+
+    for feat in feature_cols:
+        cols_order.extend([f'上一巡_{feat}', f'當下_{feat}'])
 
     common_df = common_df[[col for col in cols_order if col in common_df.columns]]
 

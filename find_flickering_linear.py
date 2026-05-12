@@ -8,6 +8,21 @@ INPUT_EXCEL = "Batch_Linear_Tracking_Result.xlsx"
 OUTPUT_EXCEL = "Flickering_Cases_Linear.xlsx"
 THRESHOLD = 0.5
 SCORE_COL = '預測聽牌分數'
+
+# 特徵欄位清單
+feature_cols = [
+    'feat_a_巡數', 'feat_b_吃碰數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 
+    'feat_e_邊張比例(1、2、8、9)', 'feat_f_字牌比例', 'feat_g_摸切比例', 
+    'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
+    'feat_z1_第9巡起最近連續摸切次數', 'feat_z2_第9巡起前兩巡連續摸切',
+    'feat_k_中張第一張被打出', 'feat_l_中張第二張被打出', 'feat_m_中張第三張被打出', 
+    'feat_n_中張第四張被打出', 'feat_o_字牌第一張被打出', 'feat_p_字牌第二張被打出', 
+    'feat_q_字牌第三張被打出', 'feat_r_字牌第四張被打出', 'feat_s_邊張(1、9)第一張被打出', 
+    'feat_t_邊張(1、9)第二張被打出', 'feat_u_邊張(1、9)第三張被打出', 
+    'feat_v_邊張(1、9)第四張被打出', 'feat_w_邊張(2、8)第一張被打出', 
+    'feat_x_邊張(2、8)第二張被打出', 'feat_y_邊張(2、8)第三張被打出', 
+    'feat_z_邊張(2、8)第四張被打出'
+]
 # ==========================================
 
 def find_flickering_cases():
@@ -38,7 +53,7 @@ def find_flickering_cases():
             current_row = group_df.iloc[idx]
             prev_row = group_df.iloc[idx - 1]
             
-            flickering_results.append({
+            case_data = {
                 '檔案名稱': file_name,
                 '玩家': player,
                 '發生掉分的 Step_ID': current_row['Step_ID'],
@@ -52,14 +67,14 @@ def find_flickering_cases():
                 '分數跌幅': round(prev_row[SCORE_COL] - current_row[SCORE_COL], 4),
                 
                 '上一巡實際向聽': prev_row['實際向聽數'],
-                '當下實際向聽': current_row['實際向聽數'],
-                
-                '上一巡巡數': prev_row['feat_a_巡數'],
-                '當下巡數': current_row['feat_a_巡數'],
+                '當下實際向聽': current_row['實際向聽數']
+            }
 
-                '上一巡吃碰數': prev_row['feat_b_吃碰數'],
-                '當下吃碰數': current_row['feat_b_吃碰數']
-            })
+            for feat in feature_cols:
+                case_data[f'上一巡_{feat}'] = prev_row.get(feat, None)
+                case_data[f'當下_{feat}'] = current_row.get(feat, None)
+                
+            flickering_results.append(case_data)
 
     if not flickering_results:
         print("✅ [Linear] 沒有找到任何「判斷倒退」的案例。模型表現穩定。")

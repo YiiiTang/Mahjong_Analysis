@@ -21,11 +21,12 @@ df_test['phase'] = df_test['feat_a_巡數'].apply(lambda x: 'early' if x <= 8 el
 
 feature_cols = [
     'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 'feat_e_邊張比例(1、2、8、9)',
-    'feat_f_字牌比例', 'feat_g_摸切比例', 'feat_h_連續摸切強度', 'feat_i_摸切轉手切',
-    'feat_j_中張第一張被打出', 'feat_k_中張第二張被打出', 'feat_l_中張第三張被打出', 'feat_m_中張第四張被打出',
-    'feat_n_字牌第一張被打出', 'feat_o_字牌第二張被打出', 'feat_p_字牌第三張被打出', 'feat_q_字牌第四張被打出',
-    'feat_r_邊張(1、9)第一張被打出', 'feat_s_邊張(1、9)第二張被打出', 'feat_t_邊張(1、9)第三張被打出', 'feat_u_邊張(1、9)第四張被打出',
-    'feat_v_邊張(2、8)第一張被打出', 'feat_w_邊張(2、8)第二張被打出', 'feat_x_邊張(2、8)第三張被打出', 'feat_y_邊張(2、8)第四張被打出'
+    'feat_f_字牌比例', 'feat_g_摸切比例', 'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
+    'feat_z1_第9巡起最近連續摸切次數', 'feat_z2_第9巡起前兩巡連續摸切',
+    'feat_k_中張第一張被打出', 'feat_l_中張第二張被打出', 'feat_m_中張第三張被打出', 'feat_n_中張第四張被打出',
+    'feat_o_字牌第一張被打出', 'feat_p_字牌第二張被打出', 'feat_q_字牌第三張被打出', 'feat_r_字牌第四張被打出',
+    'feat_s_邊張(1、9)第一張被打出', 'feat_t_邊張(1、9)第二張被打出', 'feat_u_邊張(1、9)第三張被打出', 'feat_v_邊張(1、9)第四張被打出',
+    'feat_w_邊張(2、8)第一張被打出', 'feat_x_邊張(2、8)第二張被打出', 'feat_y_邊張(2、8)第三張被打出', 'feat_z_邊張(2、8)第四張被打出'
 ]
 target_col = 'Target_是否已聽牌'
 
@@ -79,7 +80,7 @@ for meld in range(5):
             delta_mse = mse_removed - base_mse
             importance_results[feature_to_remove] = delta_mse
 
-        features_for_plot = [re.sub(r'^feat_[a-z]_', '', f) for f in feature_cols]
+        features_for_plot = [re.sub(r'^feat_[a-z0-9]+_', '', f) for f in feature_cols]
         drops_for_plot = [importance_results[f] * 1000 for f in feature_cols]
 
         features_plot_rev = features_for_plot[::-1]
