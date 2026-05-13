@@ -21,9 +21,10 @@ df = df.fillna(0)
 df['meld_count'] = df['feat_b_吃碰數']
 df['phase'] = df['feat_a_巡數'].apply(lambda x: 'early' if x <= 8 else 'late')
 
+# 移除了 'feat_g_摸切比例'
 feature_cols = [
     'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 'feat_e_邊張比例(1、2、8、9)',
-    'feat_f_字牌比例', 'feat_g_摸切比例', 'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
+    'feat_f_字牌比例', 'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
     'feat_z1_第9巡起最近連續摸切次數', 'feat_z2_第9巡起前兩巡連續摸切',
     'feat_k_中張第一張被打出', 'feat_l_中張第二張被打出', 'feat_m_中張第三張被打出', 'feat_n_中張第四張被打出',
     'feat_o_字牌第一張被打出', 'feat_p_字牌第二張被打出', 'feat_q_字牌第三張被打出', 'feat_r_字牌第四張被打出',
@@ -31,7 +32,8 @@ feature_cols = [
     'feat_w_邊張(2、8)第一張被打出', 'feat_x_邊張(2、8)第二張被打出', 'feat_y_邊張(2、8)第三張被打出', 'feat_z_邊張(2、8)第四張被打出'
 ]
 
-keys = ['a', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'z1', 'z2', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+# 移除了 'g'
+keys = ['a', 'c', 'd', 'e', 'f', 'h', 'i', 'j', 'z1', 'z2', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
 all_weights = {i: {} for i in range(5)}
 all_means = {i: {} for i in range(5)}
@@ -87,7 +89,7 @@ def dict_to_string(name, d):
             features = d[meld][phase]
             s += f"        '{phase}': {{\n"
             s += f"            'a': {features['a']:.4f}, 'c': {features['c']:.4f}, 'd': {features['d']:.4f}, 'e': {features['e']:.4f}, 'f': {features['f']:.4f},\n"
-            s += f"            'g': {features['g']:.4f}, 'h': {features['h']:.4f}, 'i': {features['i']:.4f}, 'j': {features['j']:.4f}, 'z1': {features['z1']:.4f},\n"
+            s += f"            'h': {features['h']:.4f}, 'i': {features['i']:.4f}, 'j': {features['j']:.4f}, 'z1': {features['z1']:.4f},\n"
             s += f"            'z2': {features['z2']:.4f}, 'k': {features['k']:.4f}, 'l': {features['l']:.4f}, 'm': {features['m']:.4f}, 'n': {features['n']:.4f},\n"
             s += f"            'o': {features['o']:.4f}, 'p': {features['p']:.4f}, 'q': {features['q']:.4f}, 'r': {features['r']:.4f}, 's': {features['s']:.4f},\n"
             s += f"            't': {features['t']:.4f}, 'u': {features['u']:.4f}, 'v': {features['v']:.4f}, 'w': {features['w']:.4f}, 'x': {features['x']:.4f},\n"

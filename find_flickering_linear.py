@@ -9,10 +9,10 @@ OUTPUT_EXCEL = "Flickering_Cases_Linear.xlsx"
 THRESHOLD = 0.5
 SCORE_COL = '預測聽牌分數'
 
-# 特徵欄位清單
+# 特徵欄位清單 (已移除 feat_g_摸切比例)
 feature_cols = [
     'feat_a_巡數', 'feat_b_吃碰數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 
-    'feat_e_邊張比例(1、2、8、9)', 'feat_f_字牌比例', 'feat_g_摸切比例', 
+    'feat_e_邊張比例(1、2、8、9)', 'feat_f_字牌比例', 
     'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
     'feat_z1_第9巡起最近連續摸切次數', 'feat_z2_第9巡起前兩巡連續摸切',
     'feat_k_中張第一張被打出', 'feat_l_中張第二張被打出', 'feat_m_中張第三張被打出', 

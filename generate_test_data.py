@@ -161,7 +161,6 @@ if __name__ == "__main__":
                     feat_val_prop_zhong = round(safe_div(stats['discard_3_to_7'], td), 4)
                     feat_val_prop_bian_1289 = round(safe_div(stats['discard_1289'], td), 4)
                     feat_val_prop_zi = round(safe_div(stats['discard_zi'], td), 4)
-                    feat_val_moqie_rate = round(safe_div(stats['moqie_count'], td), 4)
 
                     player_state_obj = states.get_player(states.state[j], actor_loc)
                     is_tenpai = 1 if player_state_obj.shantenCount <= 0 else 0
@@ -183,7 +182,6 @@ if __name__ == "__main__":
                         'feat_e_邊張比例(1、2、8、9)': feat_val_prop_bian_1289,
                         'feat_f_字牌比例': feat_val_prop_zi,
 
-                        'feat_g_摸切比例': feat_val_moqie_rate,
                         'feat_h_目前連續摸切': stats['current_continuous_moqie'],
                         'feat_i_摸切轉手切': is_mo_to_shou_now,
                         'feat_j_摸切轉手切次數': stats['moqie_to_shouqie_count'],

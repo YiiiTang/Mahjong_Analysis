@@ -20,9 +20,10 @@ df_test['meld_count'] = df_test['feat_b_吃碰數']
 df_train['phase'] = df_train['feat_a_巡數'].apply(lambda x: 'early' if x <= 8 else 'late')
 df_test['phase'] = df_test['feat_a_巡數'].apply(lambda x: 'early' if x <= 8 else 'late')
 
+# 移除了 'feat_g_摸切比例'
 feature_cols = [
     'feat_a_巡數', 'feat_c_花色集中度', 'feat_d_中張比例(3 ~ 7)', 'feat_e_邊張比例(1、2、8、9)',
-    'feat_f_字牌比例', 'feat_g_摸切比例', 'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
+    'feat_f_字牌比例', 'feat_h_目前連續摸切', 'feat_i_摸切轉手切', 'feat_j_摸切轉手切次數',
     'feat_z1_第9巡起最近連續摸切次數', 'feat_z2_第9巡起前兩巡連續摸切',
     'feat_k_中張第一張被打出', 'feat_l_中張第二張被打出', 'feat_m_中張第三張被打出', 'feat_n_中張第四張被打出',
     'feat_o_字牌第一張被打出', 'feat_p_字牌第二張被打出', 'feat_q_字牌第三張被打出', 'feat_r_字牌第四張被打出',
